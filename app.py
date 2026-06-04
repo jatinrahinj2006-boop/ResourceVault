@@ -269,6 +269,14 @@ def scan_seed_images():
 def index():
     return render_template('index.html')
 
+@app.route('/favicon.png')
+def favicon_png():
+    return send_from_directory(BASE_DIR, 'favicon.png')
+
+@app.route('/logo.png')
+def logo_png():
+    return send_from_directory(BASE_DIR, 'logo.png')
+
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)

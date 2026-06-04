@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ResourceVault</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
@@ -68,16 +69,17 @@
     font-size: 15px;
     letter-spacing: -0.5px;
     color: var(--text);
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 12px;
   }
 
-  .logo-mark span {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 8px;
-    font-size: 16px;
-    box-shadow: 0 0 20px var(--accent-glow);
+  .logo-mark img {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: var(--surface3);
+    padding: 4px;
+    box-shadow: 0 0 18px rgba(124,106,247,0.16);
   }
 
   .logo-sub {
@@ -960,8 +962,8 @@
 <aside class="sidebar">
   <div class="logo">
     <div class="logo-mark">
-      
-      ResourceVault
+      <img src="/logo.png" alt="ResourceVault logo" />
+      <span>ResourceVault</span>
     </div>
     <div class="logo-sub">Resource Manager</div>
   </div>

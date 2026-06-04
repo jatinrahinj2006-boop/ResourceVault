@@ -269,7 +269,7 @@
   /* ── STATS BAR ── */
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 32px;
   }
@@ -365,8 +365,97 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
 
-  .card-thumb {
+  .card.pinned {
+    border-top: 4px solid rgba(124,106,247,0.8);
+  }
+
+  .card-checkbox {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 5;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+  }
+
+  .selection-bar {
+    position: fixed;
+    left: 260px;
+    right: 24px;
+    bottom: 24px;
+    z-index: 999;
+    background: rgba(17,17,24,0.96);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+
+  .note-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .note-card {
+    border-left: 6px solid var(--accent);
+  }
+
+  .note-color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .toast.warning { border-left: 3px solid #e7c548; }
+
+  .collection-cover {
     width: 100%; height: 160px;
+    object-fit: cover;
+    background: var(--surface2);
+  }
+
+  .collection-overview {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .collection-sidebar {
+    width: 220px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    flex-shrink: 0;
+  }
+
+  .collection-sidebar h3 {
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  .collection-list-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    color: var(--text);
+  }
+
+  .collection-list-item.active,
+  .collection-list-item:hover {
+    background: rgba(124,106,247,0.08);
+    border-color: var(--accent);
+  }
     object-fit: cover;
     background: var(--surface2);
     display: block;
@@ -893,9 +982,32 @@
       Images
       <span class="nav-badge" id="badge-images">0</span>
     </button>
+    <button class="nav-item" data-section="pdfs" onclick="switchSection('pdfs', this)">
+      <span class="nav-icon">📄</span>
+      PDFs
+      <span class="nav-badge" id="badge-pdfs">0</span>
+    </button>
+    <button class="nav-item" data-section="collections" onclick="switchSection('collections', this)">
+      <span class="nav-icon">📁</span>
+      Collections
+      <span class="nav-badge" id="badge-collections">0</span>
+    </button>
+    <button class="nav-item" data-section="playlists" onclick="switchSection('playlists', this)">
+      <span class="nav-icon">🎧</span>
+      Playlists
+      <span class="nav-badge" id="badge-playlists">0</span>
+    </button>
+    <button class="nav-item" data-section="notes" onclick="switchSection('notes', this)">
+      <span class="nav-icon">🗒️</span>
+      Notes
+      <span class="nav-badge" id="badge-notes">0</span>
+    </button>
   </nav>
   <div class="sidebar-footer">
-    <button class="scan-btn" onclick="scanSeedImages()">
+    <button class="scan-btn" onclick="openImportExport()">
+      ⇄ &nbsp;Import / Export
+    </button>
+    <button class="scan-btn" onclick="scanSeedImages()" style="margin-top:10px;">
       ⟳ &nbsp;Scan seed_images/
     </button>
   </div>
@@ -908,6 +1020,8 @@
     <div class="topbar-title" id="section-title">🔗 Links</div>
     <div class="topbar-actions">
       <button class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 Search</button>
+      <button class="btn btn-ghost" id="pinned-filter" onclick="togglePinnedFilter()">📌 Pinned</button>
+      <button class="btn btn-ghost" id="select-toggle" onclick="toggleSelectMode()">☑️ Select</button>
       <button class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Resource</button>
     </div>
   </header>
@@ -935,6 +1049,13 @@
         <div>
           <div class="stat-num" id="stat-images">0</div>
           <div class="stat-label">Images</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pdfs" style="background:rgba(255,94,108,0.15)">📄</div>
+        <div>
+          <div class="stat-num" id="stat-pdfs">0</div>
+          <div class="stat-label">PDFs</div>
         </div>
       </div>
     </div>
@@ -970,6 +1091,28 @@
       </div>
       <div id="images-container" class="gallery-grid"></div>
     </div>
+
+    <!-- PDFS SECTION -->
+    <div class="section" id="section-pdfs">
+      <div id="pdfs-container" class="cards-grid"></div>
+    </div>
+
+    <!-- COLLECTIONS SECTION -->
+    <div class="section" id="section-collections">
+      <div class="cards-grid" id="collections-container"></div>
+      <div id="collection-detail" style="display:none;margin-top:24px"></div>
+    </div>
+
+    <!-- PLAYLISTS SECTION -->
+    <div class="section" id="section-playlists">
+      <div class="cards-grid" id="playlists-container"></div>
+      <div id="playlist-detail" style="display:none;margin-top:24px"></div>
+    </div>
+
+    <!-- NOTES SECTION -->
+    <div class="section" id="section-notes">
+      <div class="cards-grid note-grid" id="notes-container"></div>
+    </div>
   </div>
 </div>
 
@@ -996,6 +1139,10 @@
       <div class="form-group">
         <label class="form-label">Thumbnail URL</label>
         <input class="form-input" id="link-thumb" placeholder="https://…/thumbnail.png" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Add to Collection</label>
+        <select class="form-input" id="link-collection"></select>
       </div>
       <div class="form-group">
         <label class="form-label">Tags (comma separated)</label>
@@ -1052,6 +1199,10 @@
         <textarea class="form-input" id="vid-desc" placeholder="Optional description…"></textarea>
       </div>
       <div class="form-group">
+        <label class="form-label">Add to Collection</label>
+        <select class="form-input" id="vid-collection"></select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Tags</label>
         <input class="form-input" id="vid-tags" placeholder="tutorial, design…" />
       </div>
@@ -1076,10 +1227,209 @@
       </div>
       <div id="img-preview-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
       <div class="form-group">
+        <label class="form-label">Add to Collection</label>
+        <select class="form-input" id="img-collection"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Chapter</label>
+        <select class="form-input" id="img-chapter"></select>
+      </div>
+      <div class="form-group">
         <label class="form-label">Tags (optional)</label>
         <input class="form-input" id="img-tags" placeholder="portfolio, renders…" />
       </div>
       <button class="btn btn-primary" style="width:100%" onclick="submitImages()">Upload Images</button>
+    </div>
+<!-- ── ADD PDF MODAL ── -->
+<div class="modal-overlay" id="modal-pdfs">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add PDF</div>
+      <button class="modal-close" onclick="closeModal('modal-pdfs')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="pdf-title" placeholder="PDF title…" />
+      </div>
+      <div class="type-tabs">
+        <button class="type-tab active" id="tab-pdf-upload" onclick="setPdfType('upload', this)">📁 PDF File</button>
+        <button class="type-tab" id="tab-pdf-url" onclick="setPdfType('url', this)">🌐 PDF URL</button>
+      </div>
+      <div class="type-panel active" id="panel-pdf-upload">
+        <div class="dropzone" id="pdf-dropzone">
+          <input type="file" id="pdf-file" accept=".pdf" />
+          <div class="dropzone-icon">📄</div>
+          <div class="dropzone-text"><strong>Click or drag</strong> a PDF file here</div>
+          <div class="dropzone-sub">Only PDF files are accepted</div>
+        </div>
+      </div>
+      <div class="type-panel" id="panel-pdf-url">
+        <div class="form-group">
+          <label class="form-label">PDF URL</label>
+          <input class="form-input" id="pdf-url" placeholder="https://…/document.pdf" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="pdf-desc" placeholder="Optional description…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Add to Collection</label>
+        <select class="form-input" id="pdf-collection"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input class="form-input" id="pdf-tags" placeholder="report, documentation…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitPdf()">Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── COLLECTION MODAL ── -->
+<div class="modal-overlay" id="modal-collections">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Collection</div>
+      <button class="modal-close" onclick="closeModal('modal-collections')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="collection-title" placeholder="Collection title…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-input" id="collection-type">
+          <option value="images">Images</option>
+          <option value="videos">Videos</option>
+          <option value="mixed">Mixed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="collection-description" placeholder="Optional description…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cover image URL</label>
+        <input class="form-input" id="collection-cover" placeholder="https://…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitCollection()">Save Collection</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHAPTER MODAL ── -->
+<div class="modal-overlay" id="modal-chapter">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Chapter</div>
+      <button class="modal-close" onclick="closeModal('modal-chapter')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Chapter Title *</label>
+        <input class="form-input" id="chapter-title" placeholder="Chapter title…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitChapter()">Create Chapter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD TO PLAYLIST MODAL ── -->
+<div class="modal-overlay" id="modal-add-playlist">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add to Playlist</div>
+      <button class="modal-close" onclick="closeModal('modal-add-playlist')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Choose playlist</label>
+        <select class="form-input" id="playlist-select"></select>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitAddToPlaylist()">Add Video</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PLAYLIST CREATE MODAL ── -->
+<div class="modal-overlay" id="modal-playlist-create">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Playlist</div>
+      <button class="modal-close" onclick="closeModal('modal-playlist-create')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="new-playlist-title" placeholder="Playlist title…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="new-playlist-description" placeholder="Optional description…"></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitPlaylist()">Create Playlist</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTE MODAL ── -->
+<div class="modal-overlay" id="modal-notes">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-header">
+      <div class="modal-title" id="note-modal-title">Note</div>
+      <button class="modal-close" onclick="closeModal('modal-notes')">✕</button>
+    </div>
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div>
+        <div class="form-group">
+          <label class="form-label">Title *</label>
+          <input class="form-input" id="note-title" placeholder="Note title…" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <input class="form-input" id="note-tags" placeholder="tag1, tag2…" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Accent color</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="note-color-options"></div>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Content</label>
+          <textarea class="form-input" id="note-content" placeholder="Markdown content…" style="min-height:220px;"></textarea>
+        </div>
+      </div>
+      <div>
+        <div class="form-label">Live Preview</div>
+        <div id="note-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:360px;overflow:auto;"></div>
+      </div>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <button class="btn btn-primary" style="width:100%" onclick="submitNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── IMPORT / EXPORT MODAL ── -->
+<div class="modal-overlay" id="modal-import-export">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Import / Export</div>
+      <button class="modal-close" onclick="closeModal('modal-import-export')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <button class="btn btn-primary" style="width:100%" onclick="exportData()">Export JSON</button>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label class="form-label">Import JSON</label>
+        <input class="form-input" type="file" id="import-file" accept="application/json" onchange="handleImportFile(event)" />
+      </div>
+      <div class="form-group">
+        <div class="card-desc">Upload a ResourceVault JSON backup to restore collections, assets, playlists, notes, and metadata.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1108,7 +1458,15 @@
 const API = '';
 let currentSection = 'links';
 let videoType = 'url';
-let allData = { links: [], videos: [], images: [] };
+let noteEditorId = null;
+let playlistVideoId = null;
+let currentCollectionId = null;
+let currentChapterId = null;
+let pinnedFilterActive = false;
+let selectionMode = false;
+let selectedItems = { links: new Set(), videos: new Set(), images: new Set(), pdfs: new Set(), collections: new Set(), playlists: new Set(), notes: new Set() };
+let playlistCounts = {};
+let allData = { links: [], videos: [], images: [], pdfs: [], collections: [], chapters: [], playlists: [], notes: [] };
 
 // ── SECTION SWITCH ──────────────────────────────────────────────────────────
 function switchSection(name, el) {
@@ -1116,10 +1474,25 @@ function switchSection(name, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
-  el.classList.add('active');
-  const titles = { links: '🔗 Links', videos: '🎬 Videos', images: '🖼️ Images' };
-  document.getElementById('section-title').textContent = titles[name];
+  if (el) el.classList.add('active');
+  const titles = { links: '🔗 Links', videos: '🎬 Videos', images: '🖼️ Images', pdfs: '📄 PDFs', collections: '📁 Collections', playlists: '🎧 Playlists', notes: '🗒️ Notes' };
+  document.getElementById('section-title').textContent = titles[name] || name;
+  updateAddButton(name);
   loadSection(name);
+}
+
+function updateAddButton(section) {
+  const btn = document.getElementById('add-btn');
+  const labels = {
+    links: '+ Add Link',
+    videos: '+ Add Video',
+    images: '+ Upload Images',
+    pdfs: '+ Add PDF',
+    collections: '+ New Collection',
+    playlists: '+ New Playlist',
+    notes: '+ New Note'
+  };
+  btn.textContent = labels[section] || '+ Add';
 }
 
 function toggleSearch() {
@@ -1137,17 +1510,62 @@ function handleSearch() {
 async function loadSection(name) {
   if (name === 'images') {
     showLoading('images-container', 'gallery-grid');
+  } else if (name === 'collections') {
+    showLoading('collections-container', 'cards-grid');
+  } else if (name === 'playlists') {
+    showLoading('playlists-container', 'cards-grid');
+  } else if (name === 'notes') {
+    showLoading('notes-container', 'note-grid');
   } else {
     showLoading(name + '-container', 'cards-grid');
   }
   try {
     const res = await fetch(`${API}/api/${name}`);
     allData[name] = await res.json();
-    renderSection(name, document.getElementById('search-input').value.toLowerCase());
-    updateBadge(name, allData[name].length);
+    if (name === 'collections' || name === 'chapters' || name === 'playlists' || name === 'notes') {
+      renderSection(name, document.getElementById('search-input').value.toLowerCase());
+      updateBadge(name, allData[name].length);
+    } else {
+      renderSection(name, document.getElementById('search-input').value.toLowerCase());
+      updateBadge(name, allData[name].length);
+    }
+    if (name === 'collections' || name === 'images' || name === 'videos') {
+      loadAuxiliaryData();
+    }
   } catch(e) {
     showToast('Failed to load ' + name, 'error');
   }
+}
+
+async function loadAuxiliaryData() {
+  try {
+    const [collectionsRes, chaptersRes, playlistsRes, notesRes] = await Promise.all([
+      fetch(`${API}/api/collections`),
+      fetch(`${API}/api/chapters`),
+      fetch(`${API}/api/playlists`),
+      fetch(`${API}/api/notes`)
+    ]);
+    allData.collections = await collectionsRes.json();
+    allData.chapters = await chaptersRes.json();
+    allData.playlists = await playlistsRes.json();
+    allData.notes = await notesRes.json();
+    updateBadge('collections', allData.collections.length);
+    updateBadge('playlists', allData.playlists.length);
+    updateBadge('notes', allData.notes.length);
+    await loadPlaylistCounts();
+  } catch (e) {
+    // ignore auxiliary refresh failures
+  }
+}
+
+async function loadPlaylistCounts() {
+  playlistCounts = {};
+  await Promise.all(allData.playlists.map(async pl => {
+    const res = await fetch(`${API}/api/playlists/${pl.id}/items`);
+    if (!res.ok) return;
+    const items = await res.json();
+    playlistCounts[pl.id] = items.length;
+  }));
 }
 
 function showLoading(id, cls) {
@@ -1161,9 +1579,13 @@ async function loadStats() {
     document.getElementById('stat-links').textContent = s.links;
     document.getElementById('stat-videos').textContent = s.videos;
     document.getElementById('stat-images').textContent = s.images;
+    if (document.getElementById('stat-pdfs')) {
+      document.getElementById('stat-pdfs').textContent = s.pdfs || 0;
+    }
     updateBadge('links', s.links);
     updateBadge('videos', s.videos);
     updateBadge('images', s.images);
+    updateBadge('pdfs', s.pdfs || 0);
   } catch(e) {}
 }
 
@@ -1174,7 +1596,9 @@ function updateBadge(name, count) {
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
 function renderSection(name, q = '') {
-  const data = allData[name].filter(item => {
+  let data = allData[name] || [];
+  data = data.filter(item => {
+    if (pinnedFilterActive && !item.pinned) return false;
     if (!q) return true;
     const str = JSON.stringify(item).toLowerCase();
     return str.includes(q);
@@ -1183,6 +1607,10 @@ function renderSection(name, q = '') {
   if (name === 'links') renderLinks(data);
   else if (name === 'videos') renderVideos(data);
   else if (name === 'images') renderImages(data);
+  else if (name === 'pdfs') renderPdfs(data);
+  else if (name === 'collections') renderCollections(data);
+  else if (name === 'playlists') renderPlaylists(data);
+  else if (name === 'notes') renderNotes(data);
 }
 
 function renderLinks(links) {
@@ -1192,7 +1620,8 @@ function renderLinks(links) {
     return;
   }
   c.innerHTML = links.map(link => `
-    <div class="card" id="link-${link.id}">
+    <div class="card${link.pinned ? ' pinned' : ''}" id="link-${link.id}">
+      ${renderCheckbox('links', link.id)}
       ${link.thumbnail ? `<img class="card-thumb" src="${link.thumbnail}" alt="${esc(link.title)}" onerror="this.style.display='none'" />` : ''}
       <div class="link-card-header">
         ${!link.thumbnail ? (link.favicon ? `<img class="favicon" src="${link.favicon}" onerror="this.style.display='none'" />` : '<div class="favicon" style="background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>') : ''}
@@ -1207,6 +1636,7 @@ function renderLinks(links) {
       <div class="card-footer">
         <div class="card-tags">${renderTags(link.tags)}</div>
         <div class="card-actions">
+          ${renderPinButton('links', link.id, link.pinned)}
           <a href="${link.url}" target="_blank" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none">↗ Open</a>
           <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText('${link.url}').then(()=>showToast('Link copied!','success'))">⎘ Copy</button>
           <button class="btn btn-danger" onclick="deleteItem('links','${link.id}')">✕</button>
@@ -1223,7 +1653,8 @@ function renderVideos(videos) {
     return;
   }
   c.innerHTML = videos.map(v => `
-    <div class="card" id="video-${v.id}">
+    <div class="card${v.pinned ? ' pinned' : ''}" id="video-${v.id}">
+      ${renderCheckbox('videos', v.id)}
       <div class="video-thumb-wrapper" onclick="playVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">
         ${v.thumbnail
           ? `<img class="card-thumb" src="${v.thumbnail}" alt="${esc(v.title)}" />`
@@ -1241,6 +1672,8 @@ function renderVideos(videos) {
           ${renderTags(v.tags)}
         </div>
         <div class="card-actions">
+          ${renderPinButton('videos', v.id, v.pinned)}
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();openPlaylistAdd('${v.id}')">＋ Playlist</button>
           <button class="btn btn-danger" onclick="deleteItem('videos','${v.id}')">✕</button>
         </div>
       </div>
@@ -1256,13 +1689,133 @@ function renderImages(images) {
   }
   c.className = 'gallery-grid';
   c.innerHTML = images.map((img, i) => `
-    <div class="gallery-item" id="img-${img.id}">
+    <div class="gallery-item${img.pinned ? ' pinned' : ''}" id="img-${img.id}">
+      ${selectionMode ? `<input type="checkbox" class="card-checkbox" onclick="toggleCardSelection('images','${img.id}', event)" ${selectedItems.images.has(img.id)?'checked':''} />` : ''}
       <img src="/uploads/images/${img.filename}" alt="${esc(img.title)}" loading="lazy" onclick="openLightbox('/uploads/images/${img.filename}')" />
       <div class="gallery-overlay">
         <span class="gallery-name">${esc(img.title)}</span>
       </div>
       <span class="order-badge">#${img.sort_order || i+1}</span>
       <button class="gallery-del" onclick="event.stopPropagation();deleteItem('images','${img.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderPdfs(pdfs) {
+  const c = document.getElementById('pdfs-container');
+  if (!pdfs.length) {
+    c.innerHTML = emptyState('📄', 'No PDFs yet', 'Upload a PDF or paste a PDF URL');
+    return;
+  }
+  c.className = 'cards-grid';
+  c.innerHTML = pdfs.map(pdf => {
+    const pdfUrl = pdf.type === 'upload' ? `/uploads/pdfs/${pdf.filename}` : pdf.url;
+    const copyUrl = pdf.type === 'upload' ? window.location.origin + `/uploads/pdfs/${pdf.filename}` : pdf.url;
+    return `
+      <div class="card${pdf.pinned ? ' pinned' : ''}" id="pdf-${pdf.id}">
+        ${renderCheckbox('pdfs', pdf.id)}
+        <div class="card-thumb-placeholder">📄</div>
+        <div class="card-body">
+          <div class="card-title">${esc(pdf.title)}</div>
+          <div class="card-meta">${pdf.type === 'upload' ? 'Uploaded PDF' : esc(getDomain(pdf.url))}</div>
+          ${pdf.description ? `<div class="card-desc">${esc(pdf.description)}</div>` : '<div class="card-desc" style="color:var(--text3)">No description</div>'}
+        </div>
+        <div class="card-footer">
+          <div class="card-tags">${renderTags(pdf.tags)}</div>
+          <div class="card-actions">
+            ${renderPinButton('pdfs', pdf.id, pdf.pinned)}
+            <a href="${pdfUrl}" target="_blank" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none">↗ Open</a>
+            <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText('${copyUrl}').then(()=>showToast('Link copied!','success'))">⎘ Copy</button>
+            <button class="btn btn-danger" onclick="deleteItem('pdfs','${pdf.id}')">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCollections(collections) {
+  const c = document.getElementById('collections-container');
+  if (!collections.length) {
+    c.innerHTML = emptyState('📁', 'No collections yet', 'Create a collection and assign resources to it');
+    return;
+  }
+  const counts = collections.reduce((acc, collection) => {
+    const id = collection.id;
+    acc[id] = allData.links.filter(l => l.collection_id === id).length + allData.videos.filter(v => v.collection_id === id).length + allData.images.filter(i => i.collection_id === id).length + allData.pdfs.filter(p => p.collection_id === id).length;
+    return acc;
+  }, {});
+  c.innerHTML = collections.map(col => `
+    <div class="card${col.pinned ? ' pinned' : ''}" id="collection-${col.id}" onclick="openCollection('${col.id}')">
+      ${renderCheckbox('collections', col.id)}
+      ${col.cover_image ? `<img class="collection-cover" src="${col.cover_image}" alt="${esc(col.title)}" onerror="this.style.display='none'" />` : '<div class="collection-cover" style="display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--text3)">📁</div>'}
+      <div class="card-body">
+        <div class="card-title">${esc(col.title)}</div>
+        <div class="card-desc">${esc(col.description || '')}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-tags"><span class="tag">${esc(col.type)}</span></div>
+        <div class="card-actions">
+          ${renderPinButton('collections', col.id, col.pinned)}
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();openCollection('${col.id}')">Open</button>
+          <button class="btn btn-danger" onclick="event.stopPropagation();deleteItem('collections','${col.id}')">✕</button>
+        </div>
+      </div>
+      <div class="card-footer" style="justify-content:flex-start; gap:10px;">
+        <span class="tag">${counts[col.id] || 0} items</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPlaylists(playlists) {
+  const c = document.getElementById('playlists-container');
+  if (!playlists.length) {
+    c.innerHTML = emptyState('🎧', 'No playlists yet', 'Create a playlist and add videos to queue');
+    return;
+  }
+  c.innerHTML = playlists.map(pl => {
+    const count = playlistCounts[pl.id] || 0;
+    return `
+      <div class="card${pl.pinned ? ' pinned' : ''}" id="playlist-${pl.id}">
+        ${renderCheckbox('playlists', pl.id)}
+        <div class="card-body">
+          <div class="card-title">${esc(pl.title)}</div>
+          <div class="card-meta">${esc(pl.description || '')}</div>
+        </div>
+        <div class="card-footer">
+          <div class="card-tags"><span class="tag">${count} videos</span></div>
+          <div class="card-actions">
+            ${renderPinButton('playlists', pl.id, pl.pinned)}
+            <button class="btn btn-ghost" onclick="openPlaylist('${pl.id}')">Open</button>
+            <button class="btn btn-danger" onclick="deleteItem('playlists','${pl.id}')">✕</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNotes(notes) {
+  const c = document.getElementById('notes-container');
+  if (!notes.length) {
+    c.innerHTML = emptyState('🗒️', 'No notes yet', 'Create notes to capture ideas, links, and reminders');
+    return;
+  }
+  c.innerHTML = notes.map(note => `
+    <div class="card note-card${note.pinned ? ' pinned' : ''}" id="note-${note.id}" onclick="openNoteModal('${note.id}')" style="border-left-color:${esc(note.color || '#7c6af7')}">
+      ${renderCheckbox('notes', note.id)}
+      <div class="card-body">
+        <div class="card-title">${esc(note.title)}</div>
+        <div class="card-desc">${esc((note.content || '').substring(0, 120))}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-tags">${renderTags(note.tags)}</div>
+        <div class="card-actions">
+          ${renderPinButton('notes', note.id, note.pinned)}
+          <button class="btn btn-danger" onclick="event.stopPropagation();deleteItem('notes','${note.id}')">✕</button>
+        </div>
+      </div>
     </div>
   `).join('');
 }
@@ -1280,14 +1833,78 @@ function renderTags(tags) {
   return tags.split(',').filter(t=>t.trim()).map(t => `<span class="tag">${esc(t.trim())}</span>`).join('');
 }
 
+function renderCheckbox(type, id) {
+  if (!selectionMode) return '';
+  const checked = selectedItems[type].has(id) ? 'checked' : '';
+  return `<input type="checkbox" class="card-checkbox" onclick="toggleCardSelection('${type}','${id}', event)" ${checked} />`;
+}
+
+function renderPinButton(type, id, pinned) {
+  const label = pinned ? '📌' : '📍';
+  return `<button class="btn btn-ghost" style="padding:6px 10px;font-size:12px" onclick="event.stopPropagation();togglePin('${type}','${id}')">${label}</button>`;
+}
+
 // ── MODALS ─────────────────────────────────────────────────────────────────
 function openAddModal() {
-  const m = { links: 'modal-links', videos: 'modal-videos', images: 'modal-images' };
-  openModal(m[currentSection]);
+  const sectionModal = {
+    links: 'modal-links',
+    videos: 'modal-videos',
+    images: 'modal-images',
+    pdfs: 'modal-pdfs',
+    collections: 'modal-collections',
+    playlists: 'modal-playlist-create',
+    notes: 'modal-notes'
+  };
+  if (currentSection === 'collections') {
+    document.getElementById('collection-title').value = '';
+    document.getElementById('collection-description').value = '';
+    document.getElementById('collection-cover').value = '';
+    document.getElementById('collection-type').value = 'mixed';
+    openModal('modal-collections');
+    return;
+  }
+  if (currentSection === 'playlists') {
+    document.getElementById('new-playlist-title').value = '';
+    document.getElementById('new-playlist-description').value = '';
+    openModal('modal-playlist-create');
+    return;
+  }
+  if (currentSection === 'notes') {
+    noteEditorId = null;
+    document.getElementById('note-modal-title').textContent = 'New Note';
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-content').value = '';
+    document.getElementById('note-tags').value = '';
+    buildNoteColors('#7c6af7');
+    document.getElementById('note-preview').innerHTML = '';
+    openModal('modal-notes');
+    return;
+  }
+  refreshCollectionInputs();
+  openModal(sectionModal[currentSection]);
 }
 
 function openModal(id) {
   document.getElementById(id).classList.add('open');
+}
+
+function refreshCollectionInputs() {
+  const collectionOptions = ['<option value="">None</option>'];
+  allData.collections.forEach(col => {
+    collectionOptions.push(`<option value="${col.id}">${esc(col.title)}</option>`);
+  });
+  ['link-collection', 'vid-collection', 'img-collection', 'pdf-collection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = collectionOptions.join('');
+  });
+  const imgChapter = document.getElementById('img-chapter');
+  if (imgChapter) {
+    const options = ['<option value="">None</option>'];
+    allData.chapters.filter(ch => !currentCollectionId || ch.collection_id === currentCollectionId).sort((a,b)=>a.sort_order-b.sort_order).forEach(ch => {
+      options.push(`<option value="${ch.id}">${esc(ch.title)}</option>`);
+    });
+    imgChapter.innerHTML = options.join('');
+  }
 }
 
 function closeModal(id) {
@@ -1342,6 +1959,16 @@ document.addEventListener('DOMContentLoaded', () => {
       more.style.cssText = 'display:flex;align-items:center;color:var(--text3);font-size:13px;padding:0 8px';
       more.textContent = `+${this.files.length - 8} more`;
       list.appendChild(more);
+    }
+  });
+
+  // PDF file change preview
+  document.getElementById('pdf-file').addEventListener('change', function() {
+    const textEl = this.closest('.dropzone').querySelector('.dropzone-text');
+    if (this.files && this.files[0]) {
+      textEl.innerHTML = `Selected: <strong>${esc(this.files[0].name)}</strong>`;
+    } else {
+      textEl.innerHTML = `<strong>Click or drag</strong> a PDF file here`;
     }
   });
 });
@@ -1430,6 +2057,56 @@ async function submitImages() {
     showToast('Images uploaded!', 'success');
   } catch(e) {
     showToast('Failed to upload images', 'error');
+  }
+}
+
+// ── SUBMIT PDF ───────────────────────────────────────────────────────────────
+let pdfType = 'upload';
+function setPdfType(type, btn) {
+  pdfType = type;
+  const modal = document.getElementById('modal-pdfs');
+  modal.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  modal.querySelectorAll('.type-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  modal.querySelector('#panel-pdf-' + type).classList.add('active');
+}
+
+async function submitPdf() {
+  const title = document.getElementById('pdf-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('type', pdfType);
+  fd.append('title', title);
+  fd.append('description', document.getElementById('pdf-desc').value);
+  fd.append('tags', document.getElementById('pdf-tags').value);
+
+  if (pdfType === 'url') {
+    const url = document.getElementById('pdf-url').value.trim();
+    if (!url) { showToast('PDF URL required', 'error'); return; }
+    fd.append('url', url);
+  } else if (pdfType === 'upload') {
+    const file = document.getElementById('pdf-file').files[0];
+    if (!file) { showToast('Select a PDF file', 'error'); return; }
+    fd.append('file', file);
+  }
+
+  showToast('Uploading PDF…', 'info');
+  try {
+    const res = await fetch(`${API}/api/pdfs`, { method: 'POST', body: fd });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Failed to save PDF');
+    }
+    closeModal('modal-pdfs');
+    clearForm(['pdf-title', 'pdf-url', 'pdf-desc', 'pdf-tags', 'pdf-file']);
+    // Reset dropzone text
+    document.querySelector('#pdf-dropzone .dropzone-text').innerHTML = '<strong>Click or drag</strong> a PDF file here';
+    await loadSection('pdfs');
+    await loadStats();
+    showToast('PDF saved!', 'success');
+  } catch(e) {
+    showToast(e.message || 'Failed to save PDF', 'error');
   }
 }
 
@@ -1534,10 +2211,581 @@ function showToast(msg, type = 'info') {
   const c = document.getElementById('toasts');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠️' };
   t.innerHTML = `<span>${icons[type] || '•'}</span>${msg}`;
   c.appendChild(t);
   setTimeout(() => t.remove(), 3500);
+}
+
+function toggleCardSelection(type, id, event) {
+  event.stopPropagation();
+  if (selectedItems[type].has(id)) {
+    selectedItems[type].delete(id);
+  } else {
+    selectedItems[type].add(id);
+  }
+  renderSection(type, document.getElementById('search-input').value.toLowerCase());
+  renderSelectionBar();
+}
+
+function toggleSelectMode() {
+  selectionMode = !selectionMode;
+  selectedItems[currentSection].clear();
+  renderSection(currentSection, document.getElementById('search-input').value.toLowerCase());
+  renderSelectionBar();
+  document.getElementById('select-toggle').textContent = selectionMode ? '✕ Cancel' : '☑️ Select';
+}
+
+function renderSelectionBar() {
+  let bar = document.getElementById('selection-bar');
+  const count = selectedItems[currentSection].size;
+  if (!selectionMode) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selection-bar';
+    bar.className = 'selection-bar';
+    document.body.appendChild(bar);
+  }
+  bar.innerHTML = `
+    <div>${count} selected</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)"><input type="checkbox" onchange="toggleSelectAll(this)" ${count && selectedItems[currentSection].size === allData[currentSection].length ? 'checked' : ''} /> Select All</label>
+      <button class="btn btn-danger" onclick="deleteSelectedItems()">Delete Selected</button>
+    </div>
+  `;
+}
+
+function toggleSelectAll(el) {
+  if (el.checked) {
+    allData[currentSection].forEach(item => selectedItems[currentSection].add(item.id));
+  } else {
+    selectedItems[currentSection].clear();
+  }
+  renderSection(currentSection, document.getElementById('search-input').value.toLowerCase());
+  renderSelectionBar();
+}
+
+async function deleteSelectedItems() {
+  if (!confirm('Delete selected items?')) return;
+  const ids = Array.from(selectedItems[currentSection]);
+  for (const id of ids) {
+    await fetch(`${API}/api/${currentSection}/${id}`, { method: 'DELETE' });
+    allData[currentSection] = allData[currentSection].filter(item => item.id !== id);
+  }
+  selectedItems[currentSection].clear();
+  renderSection(currentSection, document.getElementById('search-input').value.toLowerCase());
+  renderSelectionBar();
+  loadStats();
+  showToast('Selected items deleted', 'success');
+}
+
+async function togglePin(type, id) {
+  try {
+    const res = await fetch(`${API}/api/${type}/${id}/pin`, { method: 'PATCH' });
+    if (!res.ok) throw new Error();
+    const updated = await res.json();
+    const index = allData[type].findIndex(item => item.id === id);
+    if (index > -1) allData[type][index] = updated;
+    renderSection(type, document.getElementById('search-input').value.toLowerCase());
+    showToast(updated.pinned ? 'Pinned' : 'Unpinned', 'success');
+  } catch (e) {
+    showToast('Unable to toggle pin', 'error');
+  }
+}
+
+function togglePinnedFilter() {
+  pinnedFilterActive = !pinnedFilterActive;
+  document.getElementById('pinned-filter').style.background = pinnedFilterActive ? 'rgba(124,106,247,0.15)' : 'var(--surface2)';
+  renderSection(currentSection, document.getElementById('search-input').value.toLowerCase());
+}
+
+function openCollection(id) {
+  currentCollectionId = id;
+  currentChapterId = null;
+  const col = allData.collections.find(c => c.id === id);
+  if (!col) return;
+  const detail = document.getElementById('collection-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `
+    <div class="collection-overview">
+      <div class="collection-sidebar">
+        <h3>Chapters</h3>
+        ${allData.chapters.filter(ch => ch.collection_id === id).sort((a,b)=>a.sort_order-b.sort_order).map(ch => `<div class="collection-list-item${currentChapterId===ch.id?' active':''}" onclick="selectChapter('${ch.id}')">${esc(ch.title)}</div>`).join('')}
+        <button class="btn btn-ghost" style="width:100%;margin-top:12px;" onclick="openModal('modal-chapter')">+ New Chapter</button>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <div class="card-title">${esc(col.title)}</div>
+            <div class="card-meta">${esc(col.description || '')}</div>
+          </div>
+          <button class="btn btn-primary" onclick="setCurrentCollection('${id}')">Upload to Collection</button>
+        </div>
+        <div class="gallery-grid" id="collection-items"></div>
+      </div>
+    </div>
+  `;
+  renderCollectionItems();
+}
+
+function selectChapter(id) {
+  currentChapterId = id;
+  renderCollectionItems();
+  openCollection(currentCollectionId);
+}
+
+function setCurrentCollection(id) {
+  currentCollectionId = id;
+  openAddModal();
+}
+
+function renderCollectionItems() {
+  const container = document.getElementById('collection-items');
+  if (!container) return;
+  const images = allData.images.filter(img => img.collection_id === currentCollectionId && (!currentChapterId || img.chapter_id === currentChapterId));
+  container.innerHTML = images.length ? images.map(img => `
+    <div class="gallery-item${img.pinned ? ' pinned' : ''}" id="img-${img.id}">
+      <img src="/uploads/images/${img.filename}" alt="${esc(img.title)}" loading="lazy" onclick="openLightbox('/uploads/images/${img.filename}')" />
+      <div class="gallery-overlay"><span class="gallery-name">${esc(img.title)}</span></div>
+      <span class="order-badge">#${img.sort_order || 0}</span>
+      <button class="gallery-del" onclick="event.stopPropagation();deleteItem('images','${img.id}')">✕</button>
+    </div>
+  `).join('') : '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-text">No images in this collection</div></div>';
+}
+
+async function openPlaylist(id) {
+  const pl = allData.playlists.find(p => p.id === id);
+  if (!pl) return;
+  const detail = document.getElementById('playlist-detail');
+  detail.style.display = 'block';
+  detail.innerHTML = `<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;">
+      <div>
+        <div class="card" style="padding:16px;">
+          <div class="card-title" id="playlist-player-title">${esc(pl.title)}</div>
+          <div class="card-desc">${esc(pl.description || '')}</div>
+          <div id="playlist-player"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:16px;min-height:420px;">
+          <div class="card-title">Queue</div>
+          <div id="playlist-queue" style="margin-top:12px;display:grid;gap:10px;"></div>
+        </div>
+      </div>
+    </div>`;
+  const res = await fetch(`${API}/api/playlists/${id}/items`);
+  const items = await res.json();
+  const videoIds = items.map(item => item.video_id);
+  const videos = allData.videos.filter(v => videoIds.includes(v.id));
+  renderPlaylistQueue(videos, id);
+}
+
+function renderPlaylistQueue(videos, playlistId) {
+  const queue = document.getElementById('playlist-queue');
+  if (!videos.length) return queue.innerHTML = '<div class="empty-state-text">No videos in this playlist</div>';
+  window.playlistVideos = videos;
+  window.playlistCurrentIndex = 0;
+  const title = document.getElementById('playlist-player-title');
+  const player = document.getElementById('playlist-player');
+  window.loadPlaylistVideo = (index) => {
+    const v = window.playlistVideos[index];
+    if (!v) return;
+    window.playlistCurrentIndex = index;
+    title.textContent = v.title;
+    player.innerHTML = '';
+    const container = document.createElement('div');
+    if (v.type === 'embed') {
+      container.innerHTML = `<div class="video-embed-container">${v.embed_code}</div>`;
+    } else if (v.type === 'upload' && v.filename) {
+      container.innerHTML = `<video controls autoplay style="width:100%;border-radius:var(--radius);background:#000"><source src="/uploads/videos/${v.filename}" /></video>`;
+    } else if (v.type === 'url' && v.url) {
+      const ytId = extractYouTubeId(v.url);
+      const vimId = extractVimeoId(v.url);
+      if (ytId) container.innerHTML = `<div class="video-embed-container"><iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1" allowfullscreen allow="autoplay"></iframe></div>`;
+      else if (vimId) container.innerHTML = `<div class="video-embed-container"><iframe src="https://player.vimeo.com/video/${vimId}?autoplay=1" allowfullscreen allow="autoplay"></iframe></div>`;
+      else container.innerHTML = `<video controls autoplay style="width:100%;border-radius:var(--radius)"><source src="${v.url}" /></video>`;
+    }
+    player.appendChild(container);
+    const video = player.querySelector('video');
+    if (video) {
+      video.onended = () => {
+        const next = (window.playlistCurrentIndex + 1) % window.playlistVideos.length;
+        window.loadPlaylistVideo(next);
+      };
+    }
+  };
+  queue.innerHTML = videos.map((v, idx) => `<button class="btn btn-ghost" style="width:100%;text-align:left;" onclick="event.stopPropagation();window.loadPlaylistVideo(${idx})">${esc(v.title)}</button>`).join('');
+  window.loadPlaylistVideo(0);
+}
+
+function openPlaylistAdd(videoId) {
+  playlistVideoId = videoId;
+  document.getElementById('playlist-select').innerHTML = allData.playlists.map(pl => `<option value="${pl.id}">${esc(pl.title)}</option>`).join('');
+  openModal('modal-add-playlist');
+}
+
+async function submitAddToPlaylist() {
+  const playlistId = document.getElementById('playlist-select').value;
+  if (!playlistId) { showToast('Pick a playlist', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/playlists/${playlistId}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ video_id: playlistVideoId })
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-add-playlist');
+    showToast('Added to playlist', 'success');
+  } catch (e) {
+    showToast('Unable to add to playlist', 'error');
+  }
+}
+
+function openNoteModal(id) {
+  const note = allData.notes.find(n => n.id === id);
+  noteEditorId = id;
+  document.getElementById('note-modal-title').textContent = 'Edit Note';
+  document.getElementById('note-title').value = note.title;
+  document.getElementById('note-content').value = note.content || '';
+  document.getElementById('note-tags').value = note.tags || '';
+  buildNoteColors(note.color || '#7c6af7');
+  updateNotePreview();
+  openModal('modal-notes');
+}
+
+function buildNoteColors(activeColor) {
+  const colors = ['#7c6af7', '#4fa8ff', '#50e3a4', '#f0c060', '#ff5e6c', '#8d8df7'];
+  document.getElementById('note-color-options').innerHTML = colors.map(color => `
+    <button type="button" class="btn btn-ghost" style="width:30px;height:30px;padding:0;background:${color};border:1px solid ${activeColor===color?'#fff':'rgba(255,255,255,0.2)'};" onclick="event.stopPropagation();selectNoteColor('${color}')"></button>
+  `).join('');
+  document.getElementById('note-color-options').dataset.selected = activeColor;
+}
+
+function selectNoteColor(color) {
+  document.getElementById('note-color-options').dataset.selected = color;
+  buildNoteColors(color);
+}
+
+document.addEventListener('input', event => {
+  if (event.target && event.target.id === 'note-content') {
+    updateNotePreview();
+  }
+});
+
+function updateNotePreview() {
+  const source = document.getElementById('note-content').value || '';
+  document.getElementById('note-preview').innerHTML = renderMarkdown(source);
+}
+
+function renderMarkdown(text) {
+  let html = esc(text)
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/gm, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/gm, '<em>$1</em>')
+    .replace(/\`\`\`([\s\S]*?)\`\`\`/gm, '<pre><code>$1</code></pre>')
+    .replace(/\`([^\`]+)\`/gm, '<code>$1</code>')
+    .replace(/^\> (.*$)/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/\n\n/g, '</p><p>');
+  html = `<p>${html}</p>`;
+  html = html.replace(/<p><\/p>/g, '');
+  html = html.replace(/<li>(.*?)<\/li>/g, '<ul><li>$1</li></ul>');
+  return html;
+}
+
+function openImportExport() {
+  openModal('modal-import-export');
+}
+
+async function exportData() {
+  try {
+    const res = await fetch(`${API}/api/export`);
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `resourcevault-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export ready', 'success');
+  } catch (e) {
+    showToast('Export failed', 'error');
+  }
+}
+
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const res = await fetch(`${API}/api/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error();
+      closeModal('modal-import-export');
+      await loadSection(currentSection);
+      await loadStats();
+      showToast('Import complete', 'success');
+    } catch (e) {
+      showToast('Import failed', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function submitCollection() {
+  const title = document.getElementById('collection-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+  const data = {
+    title,
+    description: document.getElementById('collection-description').value,
+    cover_image: document.getElementById('collection-cover').value,
+    type: document.getElementById('collection-type').value
+  };
+  try {
+    const res = await fetch(`${API}/api/collections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-collections');
+    await loadSection('collections');
+    await loadStats();
+    showToast('Collection created', 'success');
+  } catch (e) {
+    showToast('Failed to create collection', 'error');
+  }
+}
+
+async function submitPlaylist() {
+  const title = document.getElementById('new-playlist-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+  const description = document.getElementById('new-playlist-description').value;
+  try {
+    const res = await fetch(`${API}/api/playlists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description })
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-playlist-create');
+    await loadSection('playlists');
+    await loadStats();
+    showToast('Playlist created', 'success');
+  } catch (e) {
+    showToast('Failed to create playlist', 'error');
+  }
+}
+
+async function submitChapter() {
+  const title = document.getElementById('chapter-title').value.trim();
+  if (!title || !currentCollectionId) { showToast('Chapter title required', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/chapters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, collection_id: currentCollectionId })
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-chapter');
+    await loadAuxiliaryData();
+    openCollection(currentCollectionId);
+    showToast('Chapter created', 'success');
+  } catch (e) {
+    showToast('Failed to create chapter', 'error');
+  }
+}
+
+async function submitNote() {
+  const title = document.getElementById('note-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+  const data = {
+    title,
+    content: document.getElementById('note-content').value,
+    tags: document.getElementById('note-tags').value,
+    color: document.getElementById('note-color-options').dataset.selected || '#7c6af7'
+  };
+  try {
+    let res;
+    if (noteEditorId) {
+      res = await fetch(`${API}/api/notes/${noteEditorId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } else {
+      res = await fetch(`${API}/api/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    }
+    if (!res.ok) throw new Error();
+    closeModal('modal-notes');
+    await loadSection('notes');
+    await loadStats();
+    showToast('Note saved', 'success');
+  } catch (e) {
+    showToast('Failed to save note', 'error');
+  }
+}
+
+async function submitLink() {
+  const title = document.getElementById('link-title').value.trim();
+  const url = document.getElementById('link-url').value.trim();
+  if (!title || !url) { showToast('Title and URL required', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, url,
+        description: document.getElementById('link-desc').value,
+        thumbnail: document.getElementById('link-thumb').value,
+        tags: document.getElementById('link-tags').value,
+        collection_id: document.getElementById('link-collection').value || null
+      })
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      if (res.status === 409 && error.error === 'duplicate') {
+        showToast('This resource already exists', 'warning');
+        return;
+      }
+      throw new Error();
+    }
+    closeModal('modal-links');
+    clearForm(['link-title','link-url','link-desc','link-thumb','link-tags']);
+    await loadSection('links');
+    await loadStats();
+    showToast('Link saved!', 'success');
+  } catch(e) {
+    showToast('Failed to save link', 'error');
+  }
+}
+
+async function submitVideo() {
+  const title = document.getElementById('vid-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('type', videoType);
+  fd.append('title', title);
+  fd.append('description', document.getElementById('vid-desc').value);
+  fd.append('tags', document.getElementById('vid-tags').value);
+  fd.append('collection_id', document.getElementById('vid-collection').value || '');
+
+  if (videoType === 'url') {
+    fd.append('url', document.getElementById('vid-url').value.trim());
+  } else if (videoType === 'upload') {
+    const file = document.getElementById('vid-file').files[0];
+    if (!file) { showToast('Select a video file', 'error'); return; }
+    fd.append('file', file);
+  } else if (videoType === 'embed') {
+    fd.append('embed_code', document.getElementById('vid-embed').value.trim());
+  }
+
+  showToast('Uploading…', 'info');
+  try {
+    const res = await fetch(`${API}/api/videos`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 409 && data.error === 'duplicate') {
+        showToast('This resource already exists', 'warning');
+        return;
+      }
+      throw new Error();
+    }
+    closeModal('modal-videos');
+    clearForm(['vid-title','vid-url','vid-desc','vid-tags','vid-embed']);
+    document.getElementById('embed-preview').style.display = 'none';
+    await loadSection('videos');
+    await loadStats();
+    showToast('Video saved!', 'success');
+  } catch(e) {
+    showToast('Failed to save video', 'error');
+  }
+}
+
+async function submitImages() {
+  const files = document.getElementById('img-files').files;
+  if (!files.length) { showToast('Select images', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('tags', document.getElementById('img-tags').value);
+  fd.append('collection_id', document.getElementById('img-collection').value || '');
+  fd.append('chapter_id', document.getElementById('img-chapter').value || '');
+  Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => fd.append('files', f));
+
+  showToast('Uploading images…', 'info');
+  try {
+    const res = await fetch(`${API}/api/images`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error();
+    closeModal('modal-images');
+    clearForm(['img-tags']);
+    document.getElementById('img-preview-list').innerHTML = '';
+    await loadSection('images');
+    await loadStats();
+    showToast('Images uploaded!', 'success');
+  } catch(e) {
+    showToast('Failed to upload images', 'error');
+  }
+}
+
+async function submitPdf() {
+  const title = document.getElementById('pdf-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('type', pdfType);
+  fd.append('title', title);
+  fd.append('description', document.getElementById('pdf-desc').value);
+  fd.append('tags', document.getElementById('pdf-tags').value);
+  fd.append('collection_id', document.getElementById('pdf-collection').value || '');
+
+  if (pdfType === 'url') {
+    const url = document.getElementById('pdf-url').value.trim();
+    if (!url) { showToast('PDF URL required', 'error'); return; }
+    fd.append('url', url);
+  } else if (pdfType === 'upload') {
+    const file = document.getElementById('pdf-file').files[0];
+    if (!file) { showToast('Select a PDF file', 'error'); return; }
+    fd.append('file', file);
+  }
+
+  showToast('Uploading PDF…', 'info');
+  try {
+    const res = await fetch(`${API}/api/pdfs`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 409 && data.error === 'duplicate') {
+        showToast('This resource already exists', 'warning');
+        return;
+      }
+      throw new Error(data.error || 'Failed to save PDF');
+    }
+    closeModal('modal-pdfs');
+    clearForm(['pdf-title', 'pdf-url', 'pdf-desc', 'pdf-tags', 'pdf-file']);
+    document.querySelector('#pdf-dropzone .dropzone-text').innerHTML = '<strong>Click or drag</strong> a PDF file here';
+    await loadSection('pdfs');
+    await loadStats();
+    showToast('PDF saved!', 'success');
+  } catch(e) {
+    showToast(e.message || 'Failed to save PDF', 'error');
+  }
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────

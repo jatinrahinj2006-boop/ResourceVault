@@ -20,11 +20,12 @@ IMAGES_FOLDER = os.path.join(UPLOAD_FOLDER, 'images')
 THUMBNAILS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbnails')
 DB_PATH = os.path.join(BASE_DIR, 'vault.db')
 PDFS_FOLDER = os.path.join(UPLOAD_FOLDER, 'pdfs')
+NOTES_IMAGES_FOLDER = os.path.join(UPLOAD_FOLDER, 'notes')
 
 # Seed images folder - images placed here in project are auto-picked up
 SEED_IMAGES_FOLDER = os.path.join(BASE_DIR, 'seed_images')
 
-for folder in [VIDEOS_FOLDER, IMAGES_FOLDER, THUMBNAILS_FOLDER, SEED_IMAGES_FOLDER, PDFS_FOLDER]:
+for folder in [VIDEOS_FOLDER, IMAGES_FOLDER, THUMBNAILS_FOLDER, SEED_IMAGES_FOLDER, PDFS_FOLDER, NOTES_IMAGES_FOLDER]:
     os.makedirs(folder, exist_ok=True)
 
 ALLOWED_VIDEO = {'mp4', 'webm', 'mov', 'avi', 'mkv', 'ogv'}
@@ -178,6 +179,13 @@ def init_db():
             trashed INTEGER DEFAULT 0,
             deleted_at DATETIME,
             archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS note_images (
+            id TEXT PRIMARY KEY,
+            note_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
             sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
@@ -820,7 +828,12 @@ def get_playlist_items(pid):
 @app.route('/api/notes', methods=['GET'])
 def get_notes():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM notes WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
+    rows = conn.execute("""
+        SELECT n.*, COALESCE((SELECT COUNT(*) FROM note_images WHERE note_id = n.id), 0) as image_count
+        FROM notes n
+        WHERE trashed=0 AND archived=0
+        ORDER BY pinned DESC, sort_order ASC, created_at DESC
+    """).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -866,7 +879,81 @@ def patch_note(nid):
 @app.route('/api/notes/<nid>', methods=['DELETE'])
 def delete_note(nid):
     conn = get_db()
+    # Delete associated note images from disk
+    image_rows = conn.execute("SELECT filename FROM note_images WHERE note_id=?", (nid,)).fetchall()
+    for row in image_rows:
+        path = os.path.join(NOTES_IMAGES_FOLDER, row['filename'])
+        if os.path.exists(path):
+            os.remove(path)
+    # Delete note images from database
+    conn.execute("DELETE FROM note_images WHERE note_id=?", (nid,))
+    # Soft delete note
     conn.execute("UPDATE notes SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (nid,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+# ── NOTE IMAGES ──────────────────────────────────────────────────────────────
+
+@app.route('/api/notes/<nid>/images', methods=['GET'])
+def get_note_images(nid):
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM note_images WHERE note_id=? ORDER BY sort_order ASC", (nid,)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/notes/<nid>/images', methods=['POST'])
+def upload_note_images(nid):
+    files = request.files.getlist('files')
+    
+    if not files:
+        return jsonify({'error': 'No files'}), 400
+    
+    conn = get_db()
+    max_order = conn.execute("SELECT COALESCE(MAX(sort_order), 0) FROM note_images WHERE note_id=?", (nid,)).fetchone()[0]
+    
+    added = []
+    for f in files:
+        if f and allowed_file(f.filename, ALLOWED_IMAGE):
+            img_id = str(uuid.uuid4())
+            ext = f.filename.rsplit('.', 1)[1].lower()
+            filename = f'{img_id}.{ext}'
+            f.save(os.path.join(NOTES_IMAGES_FOLDER, filename))
+            
+            conn.execute(
+                "INSERT INTO note_images (id, note_id, filename, sort_order) VALUES (?,?,?,?)",
+                (img_id, nid, filename, max_order + 1)
+            )
+            added.append(img_id)
+            max_order += 1
+    
+    conn.commit()
+    rows = conn.execute(
+        f"SELECT * FROM note_images WHERE id IN ({','.join('?'*len(added))}) ORDER BY sort_order",
+        added
+    ).fetchall() if added else []
+    conn.close()
+    return jsonify([dict(r) for r in rows]), 201
+
+@app.route('/api/notes/<nid>/images/<img_id>', methods=['DELETE'])
+def delete_note_image(nid, img_id):
+    conn = get_db()
+    row = conn.execute("SELECT filename FROM note_images WHERE id=? AND note_id=?", (img_id, nid)).fetchone()
+    if row:
+        path = os.path.join(NOTES_IMAGES_FOLDER, row['filename'])
+        if os.path.exists(path):
+            os.remove(path)
+    conn.execute("DELETE FROM note_images WHERE id=? AND note_id=?", (img_id, nid))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/notes/<nid>/images/reorder', methods=['POST'])
+def reorder_note_images(nid):
+    order = request.json.get('order', [])  # list of {id, sort_order}
+    conn = get_db()
+    for item in order:
+        conn.execute("UPDATE note_images SET sort_order=? WHERE id=? AND note_id=?", (item['sort_order'], item['id'], nid))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})

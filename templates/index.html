@@ -1687,7 +1687,7 @@
       <div class="modal-title" id="note-modal-title">Note</div>
       <button class="modal-close" onclick="closeModal('modal-notes')">✕</button>
     </div>
-    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="modal-body" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-height:80vh;overflow-y:auto;">
       <div>
         <div class="form-group">
           <label class="form-label">Title *</label>
@@ -1701,14 +1701,26 @@
           <label class="form-label">Accent color</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="note-color-options"></div>
         </div>
-        <div class="form-group" style="grid-column:1/-1;">
+        <div class="form-group">
           <label class="form-label">Content</label>
           <textarea class="form-input" id="note-content" placeholder="Markdown content…" style="min-height:220px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Attach Images</label>
+          <div class="dropzone" style="background:var(--surface2);border:1px dashed var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+            <input type="file" id="note-image-files" accept="image/*" multiple style="display:none;" onchange="updateNoteImagePreview()" />
+            <button type="button" class="btn btn-ghost" style="width:100%;padding:8px" onclick="document.getElementById('note-image-files').click()">📸 Select Images</button>
+          </div>
+          <div id="note-image-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
         </div>
       </div>
       <div>
         <div class="form-label">Live Preview</div>
         <div id="note-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;min-height:360px;overflow:auto;"></div>
+        <div style="margin-top:16px;">
+          <div class="form-label">Attached Images</div>
+          <div id="note-attached-images" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;"></div>
+        </div>
       </div>
     </div>
     <div style="padding:0 24px 24px;">
@@ -2232,7 +2244,10 @@ function renderNotes(notes) {
         <div class="card-desc">${esc((note.content || '').substring(0, 120))}</div>
       </div>
       <div class="card-footer">
-        <div class="card-tags">${renderTags(note.tags)}</div>
+        <div class="card-tags">
+          ${renderTags(note.tags)}
+          ${note.image_count ? `<span style="background:var(--surface2);padding:2px 8px;border-radius:4px;font-size:11px;">🖼️ ${note.image_count}</span>` : ''}
+        </div>
         <div class="card-actions">
           ${renderPinButton('notes', note.id, note.pinned)}
           <button class="btn btn-danger" onclick="event.stopPropagation();deleteItem('notes','${note.id}')">✕</button>
@@ -2400,6 +2415,9 @@ function openAddModal() {
     document.getElementById('note-title').value = '';
     document.getElementById('note-content').value = '';
     document.getElementById('note-tags').value = '';
+    document.getElementById('note-image-files').value = '';
+    document.getElementById('note-image-preview').innerHTML = '';
+    document.getElementById('note-attached-images').innerHTML = '';
     buildNoteColors('#7c6af7');
     document.getElementById('note-preview').innerHTML = '';
     openModal('modal-notes');
@@ -3046,7 +3064,61 @@ function openNoteModal(id) {
   document.getElementById('note-tags').value = note.tags || '';
   buildNoteColors(note.color || '#7c6af7');
   updateNotePreview();
+  document.getElementById('note-image-files').value = '';
+  document.getElementById('note-image-preview').innerHTML = '';
+  loadNoteImages(id);
   openModal('modal-notes');
+}
+
+async function loadNoteImages(noteId) {
+  try {
+    const res = await fetch(`${API}/api/notes/${noteId}/images`);
+    const images = await res.json();
+    renderNoteAttachedImages(images, noteId);
+  } catch (e) {
+    console.error('Failed to load note images:', e);
+  }
+}
+
+function renderNoteAttachedImages(images, noteId) {
+  const container = document.getElementById('note-attached-images');
+  if (!images.length) {
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:12px;">No images attached</div>';
+    return;
+  }
+  container.innerHTML = images.map(img => `
+    <div style="position:relative;border-radius:var(--radius);overflow:hidden;cursor:pointer;">
+      <img src="/uploads/notes/${img.filename}" style="width:100%;aspect-ratio:1;object-fit:cover;" onclick="openLightbox('/uploads/notes/${img.filename}')" />
+      <button class="btn btn-danger" style="position:absolute;top:4px;right:4px;width:24px;height:24px;padding:2px;font-size:12px;" onclick="deleteNoteImage('${noteId}', '${img.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function deleteNoteImage(noteId, imageId) {
+  try {
+    const res = await fetch(`${API}/api/notes/${noteId}/images/${imageId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    loadNoteImages(noteId);
+    showToast('Image removed', 'success');
+  } catch (e) {
+    showToast('Failed to remove image', 'error');
+  }
+}
+
+function updateNoteImagePreview() {
+  const files = document.getElementById('note-image-files').files;
+  const container = document.getElementById('note-image-preview');
+  container.innerHTML = '';
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const thumb = document.createElement('div');
+      thumb.style.cssText = 'width:80px;height:80px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);background:var(--surface2);';
+      thumb.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+      container.appendChild(thumb);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function buildNoteColors(activeColor) {
@@ -3248,7 +3320,22 @@ async function submitNote() {
       });
     }
     if (!res.ok) throw new Error();
+    const newNote = await res.json();
+    
+    // Upload images if any selected
+    const imageFiles = document.getElementById('note-image-files').files;
+    if (imageFiles.length > 0) {
+      const fd = new FormData();
+      Array.from(imageFiles).forEach(f => fd.append('files', f));
+      const imgRes = await fetch(`${API}/api/notes/${newNote.id}/images`, {
+        method: 'POST',
+        body: fd
+      });
+      if (!imgRes.ok) throw new Error();
+    }
+    
     closeModal('modal-notes');
+    document.getElementById('note-image-files').value = '';
     await loadSection('notes');
     await loadStats();
     showToast('Note saved', 'success');

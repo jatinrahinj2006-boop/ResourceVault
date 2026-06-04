@@ -994,6 +994,10 @@
         <textarea class="form-input" id="link-desc" placeholder="What's this about?"></textarea>
       </div>
       <div class="form-group">
+        <label class="form-label">Thumbnail URL</label>
+        <input class="form-input" id="link-thumb" placeholder="https://…/thumbnail.png" />
+      </div>
+      <div class="form-group">
         <label class="form-label">Tags (comma separated)</label>
         <input class="form-input" id="link-tags" placeholder="design, tools, reference…" />
       </div>
@@ -1189,8 +1193,9 @@ function renderLinks(links) {
   }
   c.innerHTML = links.map(link => `
     <div class="card" id="link-${link.id}">
+      ${link.thumbnail ? `<img class="card-thumb" src="${link.thumbnail}" alt="${esc(link.title)}" onerror="this.style.display='none'" />` : ''}
       <div class="link-card-header">
-        ${link.favicon ? `<img class="favicon" src="${link.favicon}" onerror="this.style.display='none'" />` : '<div class="favicon" style="background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>'}
+        ${!link.thumbnail ? (link.favicon ? `<img class="favicon" src="${link.favicon}" onerror="this.style.display='none'" />` : '<div class="favicon" style="background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>') : ''}
         <div style="min-width:0;flex:1">
           <div class="card-title">${esc(link.title)}</div>
           <div class="card-meta">${esc(getDomain(link.url))}</div>
@@ -1353,12 +1358,13 @@ async function submitLink() {
       body: JSON.stringify({
         title, url,
         description: document.getElementById('link-desc').value,
+        thumbnail: document.getElementById('link-thumb').value,
         tags: document.getElementById('link-tags').value
       })
     });
     if (!res.ok) throw new Error();
     closeModal('modal-links');
-    clearForm(['link-title','link-url','link-desc','link-tags']);
+    clearForm(['link-title','link-url','link-desc','link-thumb','link-tags']);
     await loadSection('links');
     await loadStats();
     showToast('Link saved!', 'success');

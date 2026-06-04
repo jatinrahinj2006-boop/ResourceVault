@@ -209,16 +209,19 @@ def add_link():
     url = data.get('url', '').strip()
     description = data.get('description', '')
     tags = data.get('tags', '')
+    thumbnail = data.get('thumbnail', '').strip()
     
     if not title or not url:
         return jsonify({'error': 'Title and URL required'}), 400
     
     favicon = fetch_url_favicon(url)
+    if not thumbnail:
+        thumbnail = favicon
     
     conn = get_db()
     conn.execute(
-        "INSERT INTO links (id, title, url, description, tags, favicon) VALUES (?,?,?,?,?,?)",
-        (lid, title, url, description, tags, favicon)
+        "INSERT INTO links (id, title, url, description, tags, thumbnail, favicon) VALUES (?,?,?,?,?,?,?)",
+        (lid, title, url, description, tags, thumbnail, favicon)
     )
     conn.commit()
     row = conn.execute("SELECT * FROM links WHERE id=?", (lid,)).fetchone()

@@ -1368,6 +1368,8 @@
       </div>
       <button class="btn btn-primary" style="width:100%" onclick="submitImages()">Upload Images</button>
     </div>
+  </div>
+</div>
 <!-- ── ADD PDF MODAL ── -->
 <div class="modal-overlay" id="modal-pdfs">
   <div class="modal">
@@ -1789,8 +1791,23 @@ async function loadAuxiliaryData(force = false) {
     updateBadge('collections', allData.collections.length);
     updateBadge('playlists', allData.playlists.length);
     updateBadge('notes', allData.notes.length);
+    populateCollectionDropdowns();
   } catch (e) {
     // ignore auxiliary refresh failures
+  }
+}
+
+async function populateCollectionDropdowns() {
+  try {
+    const res = await fetch(`${API}/api/collections`);
+    const collections = await res.json();
+    const options = ['<option value="">None</option>', ...collections.map(col => `<option value="${col.id}">${esc(col.title)}</option>`)].join('');
+    ['link-collection', 'vid-collection', 'pdf-collection', 'img-collection'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = options;
+    });
+  } catch (e) {
+    // ignore dropdown refresh failures
   }
 }
 
@@ -1971,7 +1988,10 @@ function renderCollections(collections) {
   }
   const counts = collections.reduce((acc, collection) => {
     const id = collection.id;
-    acc[id] = allData.links.filter(l => l.collection_id === id).length + allData.videos.filter(v => v.collection_id === id).length + allData.images.filter(i => i.collection_id === id).length + allData.pdfs.filter(p => p.collection_id === id).length;
+    acc[id] = (allData.links || []).filter(l => l.collection_id === id).length
+      + (allData.videos || []).filter(v => v.collection_id === id).length
+      + (allData.images || []).filter(i => i.collection_id === id).length
+      + (allData.pdfs || []).filter(p => p.collection_id === id).length;
     return acc;
   }, {});
   c.innerHTML = collections.map(col => `
@@ -2385,44 +2405,6 @@ function setPdfType(type, btn) {
   modal.querySelector('#panel-pdf-' + type).classList.add('active');
 }
 
-async function submitPdf() {
-  const title = document.getElementById('pdf-title').value.trim();
-  if (!title) { showToast('Title required', 'error'); return; }
-
-  const fd = new FormData();
-  fd.append('type', pdfType);
-  fd.append('title', title);
-  fd.append('description', document.getElementById('pdf-desc').value);
-  fd.append('tags', document.getElementById('pdf-tags').value);
-
-  if (pdfType === 'url') {
-    const url = document.getElementById('pdf-url').value.trim();
-    if (!url) { showToast('PDF URL required', 'error'); return; }
-    fd.append('url', url);
-  } else if (pdfType === 'upload') {
-    const file = document.getElementById('pdf-file').files[0];
-    if (!file) { showToast('Select a PDF file', 'error'); return; }
-    fd.append('file', file);
-  }
-
-  showToast('Uploading PDF…', 'info');
-  try {
-    const res = await fetch(`${API}/api/pdfs`, { method: 'POST', body: fd });
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || 'Failed to save PDF');
-    }
-    closeModal('modal-pdfs');
-    clearForm(['pdf-title', 'pdf-url', 'pdf-desc', 'pdf-tags', 'pdf-file']);
-    // Reset dropzone text
-    document.querySelector('#pdf-dropzone .dropzone-text').innerHTML = '<strong>Click or drag</strong> a PDF file here';
-    await loadSection('pdfs');
-    await loadStats();
-    showToast('PDF saved!', 'success');
-  } catch(e) {
-    showToast(e.message || 'Failed to save PDF', 'error');
-  }
-}
 
 // ── PLAY VIDEO ───────────────────────────────────────────────────────────────
 function playVideo(v) {
@@ -2472,6 +2454,9 @@ async function deleteItem(type, id) {
       allData[type] = allData[type].filter(i => i.id !== id);
       renderSection(type, document.getElementById('search-input').value.toLowerCase());
       updateBadge(type, allData[type].length);
+    }
+    if (type === 'collections') {
+      populateCollectionDropdowns();
     }
     loadStats();
     showToast('Removed', 'success');
@@ -2791,6 +2776,9 @@ function renderCollectionItems() {
 async function openPlaylist(id) {
   const pl = allData.playlists.find(p => p.id === id);
   if (!pl) return;
+  if (!Array.isArray(allData.videos) || allData.videos.length === 0) {
+    await loadSection('videos');
+  }
   const detail = document.getElementById('playlist-detail');
   detail.style.display = 'block';
   detail.innerHTML = `<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;">
@@ -2995,6 +2983,7 @@ async function submitCollection() {
     if (!res.ok) throw new Error();
     closeModal('modal-collections');
     await loadSection('collections');
+    populateCollectionDropdowns();
     await loadStats();
     showToast('Collection created', 'success');
   } catch (e) {
@@ -3243,6 +3232,7 @@ async function submitPdf() {
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
   await loadStats();
+  await populateCollectionDropdowns();
   prefetchSectionData();
   await loadSection('links');
 })();

@@ -177,14 +177,14 @@
     color: var(--text3);
   }
 
-  .progress-bar {
+  .storage-progress-bar {
     height: 8px;
     background: var(--surface3);
     border-radius: 999px;
     overflow: hidden;
   }
 
-  .progress-fill {
+  .storage-progress-fill {
     height: 100%;
     background: var(--accent);
     border-radius: 999px;
@@ -237,12 +237,57 @@
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    display: flex;
   }
 
   @media (max-width: 960px) {
     .topbar { padding: 0 16px; }
   }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    .main { margin-left: 0 !important; width: 100% !important; }
+    .topbar { padding: 0 16px; flex-wrap: wrap; gap: 8px; }
+    .topbar-title { font-size: 15px !important; }
+    .topbar-actions { gap: 6px !important; }
+    .topbar-actions .btn { padding: 7px 10px !important; font-size: 12px !important; }
+    .sidebar-footer { display: none; }
+    .nav-item { font-size: 13px; padding: 10px 14px; }
+    .content { padding: 16px !important; padding-bottom: 90px !important; }
+    .cards-grid { grid-template-columns: 1fr !important; }
+    .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+    .info-box { font-size: 12px !important; padding: 10px 12px !important; }
+    .modal-overlay { padding: 0 !important; align-items: flex-end !important; }
+    .modal { max-width: 100% !important; border-radius: 16px 16px 0 0 !important; max-height: 85vh !important; }
+    .modal-body[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+    .mobile-nav { display: flex !important; justify-content: space-between; }
+    .mobile-nav button { width: calc(100% / 5 - 8px); }
+    .selection-bar { left: 16px !important; }
+    .fab-add { display: flex !important; }
+  }
+
+  .note-color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ── DROP OVERLAY ── */
+  #drop-overlay {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 9999;
+    background: rgba(10,10,15,0.88);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  #drop-overlay.show { display: flex; }
+  #drop-overlay-icon { font-size: 72px; margin-bottom: 12px; }
+  #drop-overlay-text { font-size: 26px; font-weight: 700; color: var(--text); }
+  #drop-overlay-sub { font-size: 14px; color: var(--text2); margin-top: 8px; font-family: 'DM Mono', monospace; }
 
   @media (max-width: 640px) {
     .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
@@ -261,11 +306,29 @@
     .main {
       margin-left: 0 !important;
       width: 100% !important;
-    }
-    .topbar {
-      padding: 0 10px !important;
-      height: 56px !important;
-    }
+  }
+  .note-color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* ── DROP OVERLAY ── */
+  #drop-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(10,10,15,0.88);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  #drop-overlay.show { display: flex; }
+  #drop-overlay-icon { font-size: 72px; margin-bottom: 12px; }
+  #drop-overlay-text { font-size: 26px; font-weight: 700; color: var(--text); }
+  #drop-overlay-sub { font-size: 14px; color: var(--text2); margin-top: 8px; font-family: 'DM Mono', monospace; }
     .topbar-title {
       font-size: 15px !important;
     }
@@ -1272,11 +1335,11 @@
     </div>
     <div class="storage-meter">
       <div class="storage-line"><span>Images</span><span id="storage-images">0</span></div>
-      <div class="progress-bar"><div class="progress-fill" id="storage-images-fill" style="width:0%"></div></div>
+      <div class="storage-progress-bar"><div class="storage-progress-fill" id="storage-images-fill" style="width:0%"></div></div>
       <div class="storage-line"><span>Videos</span><span id="storage-videos">0</span></div>
-      <div class="progress-bar"><div class="progress-fill" id="storage-videos-fill" style="width:0%"></div></div>
+      <div class="storage-progress-bar"><div class="storage-progress-fill" id="storage-videos-fill" style="width:0%"></div></div>
       <div class="storage-line"><span>Thumbnails</span><span id="storage-thumbnails">0</span></div>
-      <div class="progress-bar"><div class="progress-fill" id="storage-thumbnails-fill" style="width:0%"></div></div>
+      <div class="storage-progress-bar"><div class="storage-progress-fill" id="storage-thumbnails-fill" style="width:0%"></div></div>
     </div>
     <button type="button" class="scan-btn" id="import-export-btn" onclick="openImportExport()" style="margin-top:14px;">
       ⇄ &nbsp;Import / Export
@@ -1408,14 +1471,20 @@
       <div id="custom-items-container" class="cards-grid" style="display:none;margin-top:24px"></div>
     </div>
   </div>
+  <!-- DROP OVERLAY -->
+  <div id="drop-overlay">
+    <div id="drop-overlay-icon">📂</div>
+    <div id="drop-overlay-text">Drop files here</div>
+    <div id="drop-overlay-sub"></div>
+  </div>
 </div>
 
 <div class="mobile-nav" id="mobile-nav">
-  <button type="button" onclick="switchSection('links', this)">🔗</button>
-  <button type="button" onclick="switchSection('videos', this)">🎬</button>
-  <button type="button" onclick="switchSection('images', this)">🖼️</button>
-  <button type="button" onclick="switchSection('trash', this)">🗑️</button>
-  <button type="button" onclick="switchSection('custom', this)">🧩</button>
+  <button type="button" data-section="links" onclick="switchSection('links', this)">🔗</button>
+  <button type="button" data-section="videos" onclick="switchSection('videos', this)">🎬</button>
+  <button type="button" data-section="images" onclick="switchSection('images', this)">🖼️</button>
+  <button type="button" data-section="trash" onclick="switchSection('trash', this)">🗑️</button>
+  <button type="button" data-section="custom" onclick="switchSection('custom', this)">🧩</button>
 </div>
 <button id="fab-add" onclick="openAddModal()" aria-label="Add resource">+</button>
 
@@ -1828,7 +1897,7 @@ function switchSection(name, el) {
   document.querySelectorAll('.mobile-nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   if (el) el.classList.add('active');
-  const mobileButton = Array.from(document.querySelectorAll('.mobile-nav button')).find(b => b.textContent.trim().startsWith(getSectionIcon(name)));
+  const mobileButton = document.querySelector(`.mobile-nav button[data-section="${name}"]`);
   if (mobileButton) mobileButton.classList.add('active');
   const titles = {
     links: '🔗 Links',
@@ -1877,6 +1946,7 @@ function updateAddButton(section) {
     archive: '📦 Archive'
   };
   btn.textContent = labels[section] || '+ Add';
+  btn.className = section === 'trash' ? 'btn btn-danger' : 'btn btn-primary';
 }
 
 function toggleSearch() {
@@ -2014,6 +2084,7 @@ async function loadStats() {
     if (document.getElementById('stat-pdfs')) {
       document.getElementById('stat-pdfs').textContent = s.pdfs || 0;
     }
+    document.getElementById('stats-row').style.display = 'grid';
     updateBadge('links', s.links);
     updateBadge('videos', s.videos);
     updateBadge('images', s.images);
@@ -2104,6 +2175,9 @@ function renderVideos(videos) {
         <div class="card-actions">
           ${renderPinButton('videos', v.id, v.pinned)}
           <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();openPlaylistAdd('${v.id}')">＋ Playlist</button>
+          ${v.type === 'url' ? `<a href="${v.url}" target="_blank" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none" onclick="event.stopPropagation()">↗ Open</a><button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText('${v.url}').then(()=>showToast('URL copied!','success'))">⎘ Copy</button>` : ''}
+          ${v.type === 'upload' ? `<a href="/uploads/videos/${v.filename}" target="_blank" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none" onclick="event.stopPropagation()">↗ Open</a><button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText(window.location.origin + '/uploads/videos/${v.filename}').then(()=>showToast('URL copied!','success'))">⎘ Copy</button>` : ''}
+          ${v.type === 'embed' ? `<button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText(\`${v.embed_code || ''}\`).then(()=>showToast('Embed code copied!','success'))">⎘ Copy Embed</button>` : ''}
           <button class="btn btn-danger" onclick="deleteItem('videos','${v.id}')">✕</button>
         </div>
       </div>
@@ -2189,16 +2263,16 @@ function renderCollections(collections) {
         <div class="card-title">${esc(col.title)}</div>
         <div class="card-desc">${esc(col.description || '')}</div>
       </div>
-      <div class="card-footer">
-        <div class="card-tags"><span class="tag">${esc(col.type)}</span></div>
+      <div class="card-footer" style="justify-content:space-between;gap:10px;">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="tag">${counts[col.id] || 0} items</span>
+          <span class="tag">${esc(col.type)}</span>
+        </div>
         <div class="card-actions">
           ${renderPinButton('collections', col.id, col.pinned)}
           <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();openCollection('${col.id}')">Open</button>
           <button class="btn btn-danger" onclick="event.stopPropagation();deleteItem('collections','${col.id}')">✕</button>
         </div>
-      </div>
-      <div class="card-footer" style="justify-content:flex-start; gap:10px;">
-        <span class="tag">${counts[col.id] || 0} items</span>
       </div>
     </div>
   `).join('');
@@ -2476,10 +2550,11 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 // ── VIDEO TYPE ──────────────────────────────────────────────────────────────
 function setVideoType(type, btn) {
   videoType = type;
-  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.type-panel').forEach(p => p.classList.remove('active'));
+  const modal = document.getElementById('modal-videos');
+  modal.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  modal.querySelectorAll('.type-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('panel-' + type).classList.add('active');
+  modal.querySelector('#panel-' + type).classList.add('active');
 }
 
 // Embed preview
@@ -2751,10 +2826,11 @@ async function loadStorage() {
     const res = await fetch(`${API}/api/storage`);
     const storage = await res.json();
     const folders = ['images', 'videos', 'thumbnails'];
-    const maxSize = Math.max(storage.images.size, storage.videos.size, storage.thumbnails.size, 1);
+    const sizes = folders.map(name => (storage[name] || {}).size || 0);
+    const maxSize = Math.max(...sizes, 1);
     folders.forEach(name => {
-      const size = storage[name].size || 0;
-      const count = storage[name].count || 0;
+      const size = (storage[name] || {}).size || 0;
+      const count = (storage[name] || {}).count || 0;
       document.getElementById(`storage-${name}`).textContent = `${count} files, ${formatBytes(size)}`;
       document.getElementById(`storage-${name}-fill`).style.width = `${Math.round((size / maxSize) * 100)}%`;
     });
@@ -3034,9 +3110,19 @@ function renderPlaylistQueue(videos, playlistId) {
   window.loadPlaylistVideo(0);
 }
 
-function openPlaylistAdd(videoId) {
+async function openPlaylistAdd(videoId) {
   playlistVideoId = videoId;
-  document.getElementById('playlist-select').innerHTML = allData.playlists.map(pl => `<option value="${pl.id}">${esc(pl.title)}</option>`).join('');
+  if (allData.playlists.length === 0) {
+    try {
+      await fetchSectionData('playlists', true);
+    } catch (e) {}
+  }
+  const select = document.getElementById('playlist-select');
+  if (allData.playlists.length === 0) {
+    select.innerHTML = '<option value="">No playlists yet — create one first</option>';
+  } else {
+    select.innerHTML = allData.playlists.map(pl => `<option value="${pl.id}">${esc(pl.title)}</option>`).join('');
+  }
   openModal('modal-add-playlist');
 }
 
@@ -3368,6 +3454,45 @@ async function submitNote() {
   }
 }
 
+let linkUrlTimeout;
+document.getElementById('link-url').addEventListener('input', function() {
+  clearTimeout(linkUrlTimeout);
+  const url = this.value.trim();
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+  linkUrlTimeout = setTimeout(() => fetchLinkMetadata(url), 600);
+});
+document.getElementById('link-url').addEventListener('blur', function() {
+  const url = this.value.trim();
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    fetchLinkMetadata(url);
+  }
+});
+
+async function fetchLinkMetadata(url) {
+  const titleEl = document.getElementById('link-title');
+  if (titleEl.value.trim()) return;
+  showToast('Fetching page title…', 'info');
+  try {
+    const res = await fetch(`${API}/api/links/fetch-metadata`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.title) {
+      titleEl.value = data.title;
+    }
+    if (data.description) {
+      document.getElementById('link-desc').value = data.description;
+    }
+    if (!data.title) {
+      showToast('Could not fetch title from URL', 'warning');
+    }
+  } catch(e) {
+    showToast('Failed to fetch page metadata', 'error');
+  }
+}
+
 async function submitLink() {
   const title = document.getElementById('link-title').value.trim();
   const url = document.getElementById('link-url').value.trim();
@@ -3512,6 +3637,103 @@ async function submitPdf() {
     showToast(e.message || 'Failed to save PDF', 'error');
   }
 }
+
+// ── DRAG & DROP FILE UPLOAD ──────────────────────────────────────────────────
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  if (document.querySelector('.modal-overlay.open')) return;
+  dragCounter++;
+  if (dragCounter === 1) {
+    const s = currentSection;
+    const supported = { images: 1, pdfs: 1, videos: 1, notes: 1 };
+    if (supported[s]) {
+      const info = {
+        images: { icon: '🖼️', text: 'Drop Images Here', sub: 'PNG, JPG, GIF, WebP…' },
+        pdfs:   { icon: '📄', text: 'Drop PDFs Here',   sub: 'Only PDF files accepted' },
+        videos: { icon: '🎬', text: 'Drop Videos Here',  sub: 'MP4, WebM, MOV, AVI, MKV…' },
+        notes:  { icon: '🗒️', text: 'Drop Images Here', sub: 'Open a note to attach images' }
+      };
+      const i = info[s];
+      document.getElementById('drop-overlay-icon').textContent = i.icon;
+      document.getElementById('drop-overlay-text').textContent = i.text;
+      document.getElementById('drop-overlay-sub').textContent = i.sub;
+      document.getElementById('drop-overlay').classList.add('show');
+    }
+  }
+});
+
+document.addEventListener('dragleave', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    document.getElementById('drop-overlay').classList.remove('show');
+  }
+});
+
+document.addEventListener('dragover', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  e.preventDefault();
+});
+
+document.addEventListener('drop', async e => {
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.remove('show');
+  dragCounter = 0;
+  const files = e.dataTransfer.files;
+  if (!files.length) return;
+  const s = currentSection;
+  try {
+    if (s === 'images') {
+      const fd = new FormData();
+      Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => fd.append('files', f));
+      if (!fd.getAll('files').length) { showToast('No valid image files', 'warning'); return; }
+      showToast('Uploading images…', 'info');
+      const res = await fetch(`${API}/api/images`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error();
+      await loadSection('images'); await loadStats();
+      showToast('Images uploaded!', 'success');
+    } else if (s === 'pdfs') {
+      let count = 0;
+      for (const f of Array.from(files)) {
+        if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) continue;
+        const fd = new FormData();
+        fd.append('type', 'upload');
+        fd.append('title', f.name.replace(/\.[^/.]+$/, ''));
+        fd.append('file', f);
+        fd.append('description', '');
+        fd.append('tags', '');
+        fd.append('collection_id', '');
+        const res = await fetch(`${API}/api/pdfs`, { method: 'POST', body: fd });
+        if (res.ok) count++;
+      }
+      if (count) { await loadSection('pdfs'); await loadStats(); showToast(`${count} PDF(s) uploaded!`, 'success'); }
+      else showToast('No valid PDF files', 'warning');
+    } else if (s === 'videos') {
+      let count = 0;
+      for (const f of Array.from(files)) {
+        if (!f.type.startsWith('video/')) continue;
+        const fd = new FormData();
+        fd.append('type', 'upload');
+        fd.append('title', f.name.replace(/\.[^/.]+$/, ''));
+        fd.append('file', f);
+        fd.append('description', '');
+        fd.append('tags', '');
+        fd.append('collection_id', '');
+        const res = await fetch(`${API}/api/videos`, { method: 'POST', body: fd });
+        if (res.ok) count++;
+      }
+      if (count) { await loadSection('videos'); await loadStats(); showToast(`${count} video(s) uploaded!`, 'success'); }
+      else showToast('No valid video files', 'warning');
+    } else if (s === 'notes') {
+      showToast('Open a note and use the image attachment area', 'info');
+    }
+  } catch(e) {
+    showToast('Upload failed', 'error');
+  }
+});
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {

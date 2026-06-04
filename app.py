@@ -9,21 +9,28 @@ from flask import Flask, request, jsonify, send_from_directory, render_template,
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
+import requests
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024 * 1024 # 50GB
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
+# Persistent storage directory. On platforms with ephemeral filesystems
+# (e.g. Render's free tier), set PERSISTENT_DIR to a mounted disk path so
+# that vault.db and uploads/ survive restarts.
+# Example (Render): add a disk mounted at /data and set PERSISTENT_DIR=/data
+PERSISTENT_DIR = os.environ.get('PERSISTENT_DIR', BASE_DIR)
+UPLOAD_FOLDER = os.path.join(PERSISTENT_DIR, 'uploads')
 VIDEOS_FOLDER = os.path.join(UPLOAD_FOLDER, 'videos')
 IMAGES_FOLDER = os.path.join(UPLOAD_FOLDER, 'images')
 THUMBNAILS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbnails')
-DB_PATH = os.path.join(BASE_DIR, 'vault.db')
+DB_PATH = os.path.join(PERSISTENT_DIR, 'vault.db')
 PDFS_FOLDER = os.path.join(UPLOAD_FOLDER, 'pdfs')
 NOTES_IMAGES_FOLDER = os.path.join(UPLOAD_FOLDER, 'notes')
 
 # Seed images folder - images placed here in project are auto-picked up
-SEED_IMAGES_FOLDER = os.path.join(BASE_DIR, 'seed_images')
+SEED_IMAGES_FOLDER = os.path.join(PERSISTENT_DIR, 'seed_images')
 
 for folder in [VIDEOS_FOLDER, IMAGES_FOLDER, THUMBNAILS_FOLDER, SEED_IMAGES_FOLDER, PDFS_FOLDER, NOTES_IMAGES_FOLDER]:
     os.makedirs(folder, exist_ok=True)
@@ -125,6 +132,7 @@ def init_db():
             description TEXT,
             cover_image TEXT,
             type TEXT NOT NULL,
+            pinned INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS chapters (
@@ -138,6 +146,7 @@ def init_db():
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
+            pinned INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS playlist_items (
@@ -221,6 +230,8 @@ def init_db():
         ('notes', 'deleted_at DATETIME'),
         ('notes', 'archived INTEGER DEFAULT 0'),
         ('notes', 'sort_order INTEGER DEFAULT 0'),
+        ('collections', 'pinned INTEGER DEFAULT 0'),
+        ('playlists', 'pinned INTEGER DEFAULT 0'),
         ('custom_items', 'pinned INTEGER DEFAULT 0'),
         ('custom_items', 'trashed INTEGER DEFAULT 0'),
         ('custom_items', 'deleted_at DATETIME'),
@@ -296,6 +307,40 @@ def fetch_url_favicon(url):
 def generate_video_thumbnail(filepath, video_id):
     """Try to generate thumbnail from uploaded video using PIL or return None"""
     return None  # ffmpeg not available; frontend handles it
+
+
+def fetch_url_metadata(url):
+    """Fetch page title and description from a URL, bypassing regional blocks."""
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+        'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.72 Mobile Safari/537.36',
+    ]
+    for ua in user_agents:
+        try:
+            resp = requests.get(url, headers={
+                'User-Agent': ua,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }, timeout=15, allow_redirects=True)
+            if resp.status_code == 200:
+                resp.encoding = resp.apparent_encoding
+                html = resp.text
+                title = None
+                desc = None
+                m = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+                if m:
+                    title = m.group(1).strip()
+                    title = re.sub(r'\s+', ' ', title)
+                m = re.search(r'<meta\s+[^>]*name=["\']description["\'][^>]*content=["\']([^"\']*)["\']', html, re.IGNORECASE)
+                if not m:
+                    m = re.search(r'<meta\s+[^>]*property=["\']og:description["\'][^>]*content=["\']([^"\']*)["\']', html, re.IGNORECASE)
+                if m:
+                    desc = m.group(1).strip()
+                return title or '', desc or ''
+        except Exception:
+            continue
+    return None, None
 
 def scan_seed_images():
     """Scan seed_images folder and add any new images to DB"""
@@ -399,6 +444,17 @@ def add_link():
     conn.close()
     return jsonify(dict(row)), 201
 
+@app.route('/api/links/fetch-metadata', methods=['POST'])
+def fetch_metadata():
+    data = request.json
+    url = data.get('url', '').strip()
+    if not url:
+        return jsonify({'error': 'URL required'}), 400
+    title, description = fetch_url_metadata(url)
+    if title is None:
+        return jsonify({'error': 'Could not fetch metadata', 'title': '', 'description': ''}), 422
+    return jsonify({'title': title, 'description': description})
+
 @app.route('/api/links/<lid>', methods=['DELETE'])
 def delete_link(lid):
     conn = get_db()
@@ -490,7 +546,6 @@ def delete_video(vid):
 
 @app.route('/api/images', methods=['GET'])
 def get_images():
-    scan_seed_images()
     conn = get_db()
     rows = conn.execute("SELECT * FROM images WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, title ASC").fetchall()
     conn.close()
@@ -570,13 +625,13 @@ def trigger_scan():
 @app.route('/api/stats', methods=['GET'])
 def stats():
     conn = get_db()
-    links = conn.execute("SELECT COUNT(*) FROM links").fetchone()[0]
-    videos = conn.execute("SELECT COUNT(*) FROM videos").fetchone()[0]
-    images = conn.execute("SELECT COUNT(*) FROM images").fetchone()[0]
-    pdfs = conn.execute("SELECT COUNT(*) FROM pdfs").fetchone()[0]
+    links = conn.execute("SELECT COUNT(*) FROM links WHERE trashed=0 AND archived=0").fetchone()[0]
+    videos = conn.execute("SELECT COUNT(*) FROM videos WHERE trashed=0 AND archived=0").fetchone()[0]
+    images = conn.execute("SELECT COUNT(*) FROM images WHERE trashed=0 AND archived=0").fetchone()[0]
+    pdfs = conn.execute("SELECT COUNT(*) FROM pdfs WHERE trashed=0 AND archived=0").fetchone()[0]
     collections = conn.execute("SELECT COUNT(*) FROM collections").fetchone()[0]
     playlists = conn.execute("SELECT COUNT(*) FROM playlists").fetchone()[0]
-    notes = conn.execute("SELECT COUNT(*) FROM notes").fetchone()[0]
+    notes = conn.execute("SELECT COUNT(*) FROM notes WHERE trashed=0 AND archived=0").fetchone()[0]
     conn.close()
     return jsonify({'links': links, 'videos': videos, 'images': images, 'pdfs': pdfs, 'collections': collections, 'playlists': playlists, 'notes': notes})
 
@@ -1285,7 +1340,9 @@ def toggle_pin(item_type, item_id):
         'videos': 'videos',
         'images': 'images',
         'pdfs': 'pdfs',
-        'notes': 'notes'
+        'notes': 'notes',
+        'collections': 'collections',
+        'playlists': 'playlists'
     }
     table = table_map.get(item_type)
     if not table:

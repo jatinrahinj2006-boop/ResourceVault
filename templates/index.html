@@ -1979,6 +1979,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+async function prefetchSectionData() {
+  const sections = ['videos', 'images', 'pdfs', 'collections', 'playlists', 'notes'];
+  sections.forEach(name => {
+    if (!Array.isArray(allData[name]) || !allData[name].length) {
+      fetchSectionData(name).catch(() => {});
+    }
+  });
+  if (!auxiliaryDataLoaded) {
+    loadAuxiliaryData();
+  }
+}
+
 // ── SUBMIT LINK ─────────────────────────────────────────────────────────────
 async function submitLink() {
   const title = document.getElementById('link-title').value.trim();
@@ -2798,6 +2810,11 @@ async function submitPdf() {
 (async () => {
   await loadStats();
   await loadSection('links');
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(prefetchSectionData);
+  } else {
+    setTimeout(prefetchSectionData, 200);
+  }
 })();
 </script>
 </body>

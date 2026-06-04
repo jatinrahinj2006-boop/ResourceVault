@@ -63,6 +63,10 @@ def init_db():
             favicon TEXT,
             collection_id TEXT,
             pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS videos (
@@ -77,6 +81,10 @@ def init_db():
             tags TEXT,
             collection_id TEXT,
             pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS images (
@@ -89,6 +97,9 @@ def init_db():
             collection_id TEXT,
             chapter_id TEXT,
             pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS pdfs (
@@ -101,6 +112,10 @@ def init_db():
             tags TEXT,
             collection_id TEXT,
             pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         CREATE TABLE IF NOT EXISTS collections (
@@ -136,7 +151,34 @@ def init_db():
             content TEXT,
             color TEXT DEFAULT '#7c6af7',
             pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
             tags TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS custom_sections (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            icon TEXT DEFAULT '📁',
+            description TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS custom_items (
+            id TEXT PRIMARY KEY,
+            section_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT,
+            url TEXT,
+            filename TEXT,
+            type TEXT,
+            tags TEXT,
+            pinned INTEGER DEFAULT 0,
+            trashed INTEGER DEFAULT 0,
+            deleted_at DATETIME,
+            archived INTEGER DEFAULT 0,
+            sort_order INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     ''')
@@ -144,13 +186,38 @@ def init_db():
     for table, column in [
         ('links', 'collection_id TEXT'),
         ('links', 'pinned INTEGER DEFAULT 0'),
+        ('links', 'trashed INTEGER DEFAULT 0'),
+        ('links', 'deleted_at DATETIME'),
+        ('links', 'archived INTEGER DEFAULT 0'),
+        ('links', 'sort_order INTEGER DEFAULT 0'),
         ('videos', 'collection_id TEXT'),
         ('videos', 'pinned INTEGER DEFAULT 0'),
+        ('videos', 'trashed INTEGER DEFAULT 0'),
+        ('videos', 'deleted_at DATETIME'),
+        ('videos', 'archived INTEGER DEFAULT 0'),
+        ('videos', 'sort_order INTEGER DEFAULT 0'),
         ('images', 'collection_id TEXT'),
         ('images', 'chapter_id TEXT'),
         ('images', 'pinned INTEGER DEFAULT 0'),
+        ('images', 'trashed INTEGER DEFAULT 0'),
+        ('images', 'deleted_at DATETIME'),
+        ('images', 'archived INTEGER DEFAULT 0'),
         ('pdfs', 'collection_id TEXT'),
-        ('pdfs', 'pinned INTEGER DEFAULT 0')
+        ('pdfs', 'pinned INTEGER DEFAULT 0'),
+        ('pdfs', 'trashed INTEGER DEFAULT 0'),
+        ('pdfs', 'deleted_at DATETIME'),
+        ('pdfs', 'archived INTEGER DEFAULT 0'),
+        ('pdfs', 'sort_order INTEGER DEFAULT 0'),
+        ('notes', 'pinned INTEGER DEFAULT 0'),
+        ('notes', 'trashed INTEGER DEFAULT 0'),
+        ('notes', 'deleted_at DATETIME'),
+        ('notes', 'archived INTEGER DEFAULT 0'),
+        ('notes', 'sort_order INTEGER DEFAULT 0'),
+        ('custom_items', 'pinned INTEGER DEFAULT 0'),
+        ('custom_items', 'trashed INTEGER DEFAULT 0'),
+        ('custom_items', 'deleted_at DATETIME'),
+        ('custom_items', 'archived INTEGER DEFAULT 0'),
+        ('custom_items', 'sort_order INTEGER DEFAULT 0')
     ]:
         ensure_column(conn, table, column)
 
@@ -286,7 +353,7 @@ def uploaded_file(filename):
 @app.route('/api/links', methods=['GET'])
 def get_links():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM links ORDER BY pinned DESC, created_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM links WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -327,7 +394,7 @@ def add_link():
 @app.route('/api/links/<lid>', methods=['DELETE'])
 def delete_link(lid):
     conn = get_db()
-    conn.execute("DELETE FROM links WHERE id=?", (lid,))
+    conn.execute("UPDATE links SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (lid,))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
@@ -337,7 +404,7 @@ def delete_link(lid):
 @app.route('/api/videos', methods=['GET'])
 def get_videos():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM videos ORDER BY pinned DESC, created_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM videos WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -406,12 +473,7 @@ def add_video():
 @app.route('/api/videos/<vid>', methods=['DELETE'])
 def delete_video(vid):
     conn = get_db()
-    row = conn.execute("SELECT * FROM videos WHERE id=?", (vid,)).fetchone()
-    if row and row['filename']:
-        fpath = os.path.join(VIDEOS_FOLDER, row['filename'])
-        if os.path.exists(fpath):
-            os.remove(fpath)
-    conn.execute("DELETE FROM videos WHERE id=?", (vid,))
+    conn.execute("UPDATE videos SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (vid,))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
@@ -422,7 +484,7 @@ def delete_video(vid):
 def get_images():
     scan_seed_images()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM images ORDER BY pinned DESC, sort_order ASC, title ASC").fetchall()
+    rows = conn.execute("SELECT * FROM images WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, title ASC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -477,13 +539,8 @@ def upload_images():
 @app.route('/api/images/<iid>', methods=['DELETE'])
 def delete_image(iid):
     conn = get_db()
-    row = conn.execute("SELECT * FROM images WHERE id=?", (iid,)).fetchone()
-    if row:
-        fpath = os.path.join(IMAGES_FOLDER, row['filename'])
-        if os.path.exists(fpath) and row['source'] != 'seed':
-            os.remove(fpath)
-        conn.execute("DELETE FROM images WHERE id=?", (iid,))
-        conn.commit()
+    conn.execute("UPDATE images SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (iid,))
+    conn.commit()
     conn.close()
     return jsonify({'ok': True})
 
@@ -520,7 +577,7 @@ def stats():
 @app.route('/api/pdfs', methods=['GET'])
 def get_pdfs():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM pdfs ORDER BY pinned DESC, created_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM pdfs WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -582,12 +639,7 @@ def add_pdf():
 @app.route('/api/pdfs/<pid>', methods=['DELETE'])
 def delete_pdf(pid):
     conn = get_db()
-    row = conn.execute("SELECT * FROM pdfs WHERE id=?", (pid,)).fetchone()
-    if row and row['type'] == 'upload' and row['filename']:
-        fpath = os.path.join(PDFS_FOLDER, row['filename'])
-        if os.path.exists(fpath):
-            os.remove(fpath)
-    conn.execute("DELETE FROM pdfs WHERE id=?", (pid,))
+    conn.execute("UPDATE pdfs SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (pid,))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
@@ -768,7 +820,7 @@ def get_playlist_items(pid):
 @app.route('/api/notes', methods=['GET'])
 def get_notes():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM notes ORDER BY pinned DESC, created_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM notes WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -814,7 +866,291 @@ def patch_note(nid):
 @app.route('/api/notes/<nid>', methods=['DELETE'])
 def delete_note(nid):
     conn = get_db()
-    conn.execute("DELETE FROM notes WHERE id=?", (nid,))
+    conn.execute("UPDATE notes SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (nid,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+# ── TRASH / ARCHIVE / STORAGE ─────────────────────────────────────────────────
+
+@app.route('/api/trash', methods=['GET'])
+def get_trash():
+    conn = get_db()
+    results = []
+    for item_type in ['links', 'videos', 'images', 'pdfs', 'notes', 'custom_items']:
+        rows = conn.execute(f"SELECT * FROM {item_type} WHERE trashed=1 ORDER BY deleted_at DESC").fetchall()
+        for row in rows:
+            item = dict(row)
+            item['type'] = item_type
+            results.append(item)
+    conn.close()
+    return jsonify(results)
+
+@app.route('/api/archive', methods=['GET'])
+def get_archive():
+    conn = get_db()
+    results = []
+    for item_type in ['links', 'videos', 'images', 'pdfs', 'notes', 'custom_items']:
+        rows = conn.execute(f"SELECT * FROM {item_type} WHERE archived=1 AND trashed=0 ORDER BY created_at DESC").fetchall()
+        for row in rows:
+            item = dict(row)
+            item['type'] = item_type
+            results.append(item)
+    conn.close()
+    return jsonify(results)
+
+@app.route('/api/<item_type>/<item_id>/restore', methods=['PATCH'])
+def restore_item(item_type, item_id):
+    table_map = {
+        'links': 'links',
+        'videos': 'videos',
+        'images': 'images',
+        'pdfs': 'pdfs',
+        'notes': 'notes',
+        'custom_items': 'custom_items'
+    }
+    table = table_map.get(item_type)
+    if not table:
+        return jsonify({'error': 'Invalid item type'}), 400
+    conn = get_db()
+    conn.execute(f"UPDATE {table} SET trashed=0, deleted_at=NULL WHERE id=?", (item_id,))
+    conn.commit()
+    row = conn.execute(f"SELECT * FROM {table} WHERE id=?", (item_id,)).fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+@app.route('/api/<item_type>/<item_id>/archive', methods=['PATCH'])
+def toggle_archive(item_type, item_id):
+    table_map = {
+        'links': 'links',
+        'videos': 'videos',
+        'images': 'images',
+        'pdfs': 'pdfs',
+        'notes': 'notes',
+        'custom_items': 'custom_items'
+    }
+    table = table_map.get(item_type)
+    if not table:
+        return jsonify({'error': 'Invalid item type'}), 400
+    conn = get_db()
+    row = conn.execute(f"SELECT archived FROM {table} WHERE id=?", (item_id,)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    new_val = 0 if row['archived'] else 1
+    conn.execute(f"UPDATE {table} SET archived=? WHERE id=?", (new_val, item_id))
+    conn.commit()
+    row = conn.execute(f"SELECT * FROM {table} WHERE id=?", (item_id,)).fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+@app.route('/api/<item_type>/<item_id>/permanent', methods=['DELETE'])
+def delete_permanent(item_type, item_id):
+    table_map = {
+        'links': 'links',
+        'videos': 'videos',
+        'images': 'images',
+        'pdfs': 'pdfs',
+        'notes': 'notes',
+        'custom_items': 'custom_items'
+    }
+    table = table_map.get(item_type)
+    if not table:
+        return jsonify({'error': 'Invalid item type'}), 400
+    conn = get_db()
+    row = conn.execute(f"SELECT * FROM {table} WHERE id=?", (item_id,)).fetchone()
+    if row:
+        if table == 'videos' and row['filename']:
+            path = os.path.join(VIDEOS_FOLDER, row['filename'])
+            if os.path.exists(path):
+                os.remove(path)
+        elif table == 'images' and row['filename'] and row.get('source') != 'seed':
+            path = os.path.join(IMAGES_FOLDER, row['filename'])
+            if os.path.exists(path):
+                os.remove(path)
+        elif table == 'pdfs' and row['type'] == 'upload' and row['filename']:
+            path = os.path.join(PDFS_FOLDER, row['filename'])
+            if os.path.exists(path):
+                os.remove(path)
+    conn.execute(f"DELETE FROM {table} WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/trash/empty', methods=['DELETE'])
+def empty_trash():
+    conn = get_db()
+    for table in ['links', 'videos', 'images', 'pdfs', 'notes', 'custom_items']:
+        if table == 'videos':
+            rows = conn.execute("SELECT * FROM videos WHERE trashed=1").fetchall()
+            for row in rows:
+                if row['filename']:
+                    path = os.path.join(VIDEOS_FOLDER, row['filename'])
+                    if os.path.exists(path):
+                        os.remove(path)
+        elif table == 'images':
+            rows = conn.execute("SELECT * FROM images WHERE trashed=1").fetchall()
+            for row in rows:
+                if row['filename'] and row['source'] != 'seed':
+                    path = os.path.join(IMAGES_FOLDER, row['filename'])
+                    if os.path.exists(path):
+                        os.remove(path)
+        elif table == 'pdfs':
+            rows = conn.execute("SELECT * FROM pdfs WHERE trashed=1").fetchall()
+            for row in rows:
+                if row['type'] == 'upload' and row['filename']:
+                    path = os.path.join(PDFS_FOLDER, row['filename'])
+                    if os.path.exists(path):
+                        os.remove(path)
+        conn.execute(f"DELETE FROM {table} WHERE trashed=1")
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/<item_type>/reorder', methods=['POST'])
+def reorder_items(item_type):
+    payload = request.get_json(force=True)
+    order = payload.get('order') if isinstance(payload, dict) else None
+    if not isinstance(order, list):
+        return jsonify({'error': 'Order array required'}), 400
+    table_map = {
+        'links': 'links',
+        'videos': 'videos',
+        'pdfs': 'pdfs',
+        'notes': 'notes',
+        'custom_items': 'custom_items'
+    }
+    table = table_map.get(item_type)
+    if not table:
+        return jsonify({'error': 'Invalid item type'}), 400
+    conn = get_db()
+    for idx, item_id in enumerate(order):
+        conn.execute(f"UPDATE {table} SET sort_order=? WHERE id=?", (idx + 1, item_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/storage', methods=['GET'])
+def get_storage():
+    def folder_info(folder):
+        if not os.path.exists(folder):
+            return {'count': 0, 'size': 0}
+        count = 0
+        size = 0
+        for root, _, files in os.walk(folder):
+            for f in files:
+                fp = os.path.join(root, f)
+                if os.path.isfile(fp):
+                    count += 1
+                    size += os.path.getsize(fp)
+        return {'count': count, 'size': size}
+    data = {
+        'uploads': folder_info(UPLOAD_FOLDER),
+        'images': folder_info(IMAGES_FOLDER),
+        'videos': folder_info(VIDEOS_FOLDER),
+        'pdfs': folder_info(PDFS_FOLDER),
+        'thumbnails': folder_info(THUMBNAILS_FOLDER)
+    }
+    return jsonify(data)
+
+@app.route('/api/storage/thumbnails', methods=['DELETE'])
+def clear_thumbnails():
+    deleted = 0
+    if os.path.exists(THUMBNAILS_FOLDER):
+        for fname in os.listdir(THUMBNAILS_FOLDER):
+            path = os.path.join(THUMBNAILS_FOLDER, fname)
+            if os.path.isfile(path):
+                os.remove(path)
+                deleted += 1
+    return jsonify({'deleted': deleted})
+
+# ── CUSTOM SECTIONS ─────────────────────────────────────────────────────────
+
+@app.route('/api/custom-sections', methods=['GET'])
+def get_custom_sections():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM custom_sections ORDER BY created_at DESC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/custom-sections', methods=['POST'])
+def add_custom_section():
+    payload = request.get_json(force=True)
+    title = payload.get('title')
+    icon = payload.get('icon', '📁')
+    description = payload.get('description', '')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    conn = get_db()
+    section_id = str(uuid.uuid4())
+    conn.execute("INSERT INTO custom_sections (id, title, icon, description) VALUES (?, ?, ?, ?)",
+                 (section_id, title, icon, description))
+    conn.commit()
+    row = conn.execute("SELECT * FROM custom_sections WHERE id=?", (section_id,)).fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+@app.route('/api/custom-sections/<sid>', methods=['DELETE'])
+def delete_custom_section(sid):
+    conn = get_db()
+    conn.execute("DELETE FROM custom_items WHERE section_id=?", (sid,))
+    conn.execute("DELETE FROM custom_sections WHERE id=?", (sid,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/custom-items', methods=['GET'])
+def get_custom_items():
+    section_id = request.args.get('section_id')
+    conn = get_db()
+    if section_id:
+        rows = conn.execute("SELECT * FROM custom_items WHERE section_id=? AND trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC", (section_id,)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM custom_items WHERE trashed=0 AND archived=0 ORDER BY pinned DESC, sort_order ASC, created_at DESC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/custom-items', methods=['POST'])
+def add_custom_item():
+    payload = request.get_json(force=True)
+    section_id = payload.get('section_id')
+    title = payload.get('title')
+    if not section_id or not title:
+        return jsonify({'error': 'Section and title are required'}), 400
+    conn = get_db()
+    item_id = str(uuid.uuid4())
+    conn.execute(
+        "INSERT INTO custom_items (id, section_id, title, content, url, filename, type, tags, pinned, trashed, archived, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)",
+        (item_id, section_id, title, payload.get('content', ''), payload.get('url', ''), payload.get('filename', ''), payload.get('type', 'note'), payload.get('tags', ''))
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM custom_items WHERE id=?", (item_id,)).fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+@app.route('/api/custom-items/<cid>', methods=['PATCH'])
+def update_custom_item(cid):
+    payload = request.get_json(force=True)
+    updates = []
+    values = []
+    for key in ['title', 'content', 'url', 'filename', 'type', 'tags', 'pinned', 'trashed', 'archived', 'sort_order']:
+        if key in payload:
+            updates.append(f"{key}=?")
+            values.append(payload[key])
+    if not updates:
+        return jsonify({'error': 'No updates provided'}), 400
+    values.append(cid)
+    conn = get_db()
+    conn.execute(f"UPDATE custom_items SET {', '.join(updates)} WHERE id=?", values)
+    conn.commit()
+    row = conn.execute("SELECT * FROM custom_items WHERE id=?", (cid,)).fetchone()
+    conn.close()
+    return jsonify(dict(row))
+
+@app.route('/api/custom-items/<cid>', methods=['DELETE'])
+def delete_custom_item(cid):
+    conn = get_db()
+    conn.execute("UPDATE custom_items SET trashed=1, deleted_at=CURRENT_TIMESTAMP WHERE id=?", (cid,))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
@@ -825,7 +1161,7 @@ def delete_note(nid):
 def export_all():
     conn = get_db()
     data = {}
-    for table in ['links', 'videos', 'images', 'pdfs', 'collections', 'chapters', 'playlists', 'playlist_items', 'notes']:
+    for table in ['links', 'videos', 'images', 'pdfs', 'collections', 'chapters', 'playlists', 'playlist_items', 'notes', 'custom_sections', 'custom_items']:
         rows = conn.execute(f"SELECT * FROM {table}").fetchall()
         data[table] = [dict(r) for r in rows]
     conn.close()
@@ -838,7 +1174,7 @@ def import_all():
         return jsonify({'error': 'Invalid import payload'}), 400
     conn = get_db()
     for table, rows in payload.items():
-        if table not in ['links', 'videos', 'images', 'pdfs', 'collections', 'chapters', 'playlists', 'playlist_items', 'notes']:
+        if table not in ['links', 'videos', 'images', 'pdfs', 'collections', 'chapters', 'playlists', 'playlist_items', 'notes', 'custom_sections', 'custom_items']:
             continue
         if not isinstance(rows, list):
             continue

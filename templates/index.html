@@ -164,6 +164,76 @@
     border-top: 1px solid var(--border);
   }
 
+  .storage-meter {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .storage-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--surface3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,15,20,0.96);
+    border-top: 1px solid var(--border);
+    padding: 8px 10px;
+    z-index: 150;
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-nav button {
+    width: calc(100% / 5 - 8px);
+    margin: 0 4px;
+    border-radius: 14px;
+    background: var(--surface2);
+    color: var(--text2);
+    border: none;
+    font-size: 12px;
+    padding: 10px 0;
+  }
+
+  .mobile-nav button.active {
+    background: rgba(124,106,247,0.15);
+    color: var(--accent2);
+  }
+
+  @media (max-width: 960px) {
+    .topbar { padding: 0 16px; }
+  }
+
+  @media (max-width: 640px) {
+    .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { margin-left: 0; padding-bottom: 84px; }
+    .topbar { padding: 0 16px; flex-wrap: wrap; gap: 8px; }
+    .sidebar-footer { display: none; }
+    .mobile-nav { display: flex; justify-content: space-between; }
+    .nav-item { font-size: 13px; padding: 10px 14px; }
+    .mobile-nav button { width: calc(100% / 4 - 8px); }
+  }
+
   .scan-btn {
     width: 100%;
     padding: 10px;
@@ -969,7 +1039,7 @@
   </div>
   <nav class="nav">
     <div class="nav-section">Library</div>
-    <button class="nav-item active" data-section="links" onclick="switchSection('links', this)">
+    <button type="button" class="nav-item active" data-section="links" onclick="switchSection('links', this)">
       <span class="nav-icon">🔗</span>
       Links
       <span class="nav-badge" id="badge-links">0</span>
@@ -1004,12 +1074,40 @@
       Notes
       <span class="nav-badge" id="badge-notes">0</span>
     </button>
+    <div class="nav-section">Workspace</div>
+    <button class="nav-item" data-section="archive" onclick="switchSection('archive', this)">
+      <span class="nav-icon">🗄️</span>
+      Archive
+      <span class="nav-badge" id="badge-archive">0</span>
+    </button>
+    <button class="nav-item" data-section="trash" onclick="switchSection('trash', this)">
+      <span class="nav-icon">🗑️</span>
+      Trash
+      <span class="nav-badge" id="badge-trash">0</span>
+    </button>
+    <button class="nav-item" data-section="custom" onclick="switchSection('custom', this)">
+      <span class="nav-icon">🧩</span>
+      Sections
+      <span class="nav-badge" id="badge-custom">0</span>
+    </button>
   </nav>
   <div class="sidebar-footer">
-    <button class="scan-btn" onclick="openImportExport()">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;color:var(--text3)">
+      <span>Storage</span>
+      <button type="button" class="scan-btn" style="padding:6px 10px;font-size:11px" onclick="loadStorage()">Refresh</button>
+    </div>
+    <div class="storage-meter">
+      <div class="storage-line"><span>Images</span><span id="storage-images">0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="storage-images-fill" style="width:0%"></div></div>
+      <div class="storage-line"><span>Videos</span><span id="storage-videos">0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="storage-videos-fill" style="width:0%"></div></div>
+      <div class="storage-line"><span>Thumbnails</span><span id="storage-thumbnails">0</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="storage-thumbnails-fill" style="width:0%"></div></div>
+    </div>
+    <button type="button" class="scan-btn" id="import-export-btn" onclick="openImportExport()" style="margin-top:14px;">
       ⇄ &nbsp;Import / Export
     </button>
-    <button class="scan-btn" onclick="scanSeedImages()" style="margin-top:10px;">
+    <button type="button" class="scan-btn" id="scan-seed-btn" onclick="scanSeedImages()" style="margin-top:10px;">
       ⟳ &nbsp;Scan seed_images/
     </button>
   </div>
@@ -1021,10 +1119,10 @@
   <header class="topbar">
     <div class="topbar-title" id="section-title">🔗 Links</div>
     <div class="topbar-actions">
-      <button class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 Search</button>
-      <button class="btn btn-ghost" id="pinned-filter" onclick="togglePinnedFilter()">📌 Pinned</button>
-      <button class="btn btn-ghost" id="select-toggle" onclick="toggleSelectMode()">☑️ Select</button>
-      <button class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Resource</button>
+      <button type="button" class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 Search</button>
+      <button type="button" class="btn btn-ghost" id="pinned-filter" onclick="togglePinnedFilter()">📌 Pinned</button>
+      <button type="button" class="btn btn-ghost" id="select-toggle" onclick="toggleSelectMode()">☑️ Select</button>
+      <button type="button" class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Resource</button>
     </div>
   </header>
 
@@ -1115,7 +1213,35 @@
     <div class="section" id="section-notes">
       <div class="cards-grid note-grid" id="notes-container"></div>
     </div>
+
+    <!-- ARCHIVE SECTION -->
+    <div class="section" id="section-archive">
+      <div id="archive-container" class="cards-grid"></div>
+    </div>
+
+    <!-- TRASH SECTION -->
+    <div class="section" id="section-trash">
+      <div id="trash-container" class="cards-grid"></div>
+    </div>
+
+    <!-- CUSTOM SECTIONS -->
+    <div class="section" id="section-custom">
+      <div class="info-box">
+        <span class="info-box-icon">🧩</span>
+        <span>Organize your own custom sections and add notes, links, or files to each workspace area.</span>
+      </div>
+      <div class="cards-grid" id="custom-sections-container"></div>
+      <div id="custom-items-container" class="cards-grid" style="display:none;margin-top:24px"></div>
+    </div>
   </div>
+</div>
+
+<div class="mobile-nav" id="mobile-nav">
+  <button type="button" onclick="switchSection('links', this)">🔗</button>
+  <button type="button" onclick="switchSection('videos', this)">🎬</button>
+  <button type="button" onclick="switchSection('images', this)">🖼️</button>
+  <button type="button" onclick="switchSection('trash', this)">🗑️</button>
+  <button type="button" onclick="switchSection('custom', this)">🧩</button>
 </div>
 
 <!-- ── ADD LINK MODAL ── -->
@@ -1414,6 +1540,33 @@
   </div>
 </div>
 
+<!-- ── CUSTOM SECTION MODAL ── -->
+<div class="modal-overlay" id="modal-custom-section">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Custom Section</div>
+      <button class="modal-close" onclick="closeModal('modal-custom-section')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="custom-section-title" placeholder="Section title…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <input class="form-input" id="custom-section-icon" placeholder="Emoji or icon…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="custom-section-description" placeholder="Optional description…" style="min-height:120px;"></textarea>
+      </div>
+    </div>
+    <div style="padding:0 24px 24px;">
+      <button class="btn btn-primary" style="width:100%" onclick="submitCustomSection()">Create Section</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── IMPORT / EXPORT MODAL ── -->
 <div class="modal-overlay" id="modal-import-export">
   <div class="modal">
@@ -1466,21 +1619,56 @@ let currentCollectionId = null;
 let currentChapterId = null;
 let pinnedFilterActive = false;
 let selectionMode = false;
-let selectedItems = { links: new Set(), videos: new Set(), images: new Set(), pdfs: new Set(), collections: new Set(), playlists: new Set(), notes: new Set() };
+let touchStartX = null;
+let touchStartY = null;
+let pullRefreshing = false;
+let selectedItems = { links: new Set(), videos: new Set(), images: new Set(), pdfs: new Set(), collections: new Set(), playlists: new Set(), notes: new Set(), archive: new Set(), trash: new Set(), custom: new Set() };
 let auxiliaryDataLoaded = false;
-let allData = { links: [], videos: [], images: [], pdfs: [], collections: [], chapters: [], playlists: [], notes: [] };
+let allData = {
+  links: [], videos: [], images: [], pdfs: [], collections: [], chapters: [], playlists: [], notes: [],
+  archive: [], trash: [], custom_sections: [], custom_items: []
+};
 
 // ── SECTION SWITCH ──────────────────────────────────────────────────────────
 function switchSection(name, el) {
   currentSection = name;
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('section-' + name).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = { links: '🔗 Links', videos: '🎬 Videos', images: '🖼️ Images', pdfs: '📄 PDFs', collections: '📁 Collections', playlists: '🎧 Playlists', notes: '🗒️ Notes' };
+  const mobileButton = Array.from(document.querySelectorAll('.mobile-nav button')).find(b => b.textContent.trim().startsWith(getSectionIcon(name)));
+  if (mobileButton) mobileButton.classList.add('active');
+  const titles = {
+    links: '🔗 Links',
+    videos: '🎬 Videos',
+    images: '🖼️ Images',
+    pdfs: '📄 PDFs',
+    collections: '📁 Collections',
+    playlists: '🎧 Playlists',
+    notes: '🗒️ Notes',
+    archive: '🗄️ Archive',
+    trash: '🗑️ Trash',
+    custom: '🧩 Sections'
+  };
   document.getElementById('section-title').textContent = titles[name] || name;
   updateAddButton(name);
   loadSection(name);
+}
+
+function getSectionIcon(name) {
+  return {
+    links: '🔗',
+    videos: '🎬',
+    images: '🖼️',
+    pdfs: '📄',
+    collections: '📁',
+    playlists: '🎧',
+    notes: '🗒️',
+    archive: '🗄️',
+    trash: '🗑️',
+    custom: '🧩'
+  }[name] || '';
 }
 
 function updateAddButton(section) {
@@ -1492,7 +1680,10 @@ function updateAddButton(section) {
     pdfs: '+ Add PDF',
     collections: '+ New Collection',
     playlists: '+ New Playlist',
-    notes: '+ New Note'
+    notes: '+ New Note',
+    custom: '+ Add Section',
+    trash: '🗑️ Empty Trash',
+    archive: '📦 Archive'
   };
   btn.textContent = labels[section] || '+ Add';
 }
@@ -1532,6 +1723,12 @@ async function loadSection(name, options = {}) {
     showLoading('playlists-container', 'cards-grid');
   } else if (name === 'notes') {
     showLoading('notes-container', 'note-grid');
+  } else if (name === 'custom') {
+    showLoading('custom-sections-container', 'cards-grid');
+  } else if (name === 'archive') {
+    showLoading('archive-container', 'cards-grid');
+  } else if (name === 'trash') {
+    showLoading('trash-container', 'cards-grid');
   } else {
     showLoading(name + '-container', 'cards-grid');
   }
@@ -1541,7 +1738,28 @@ async function loadSection(name, options = {}) {
 
 async function fetchSectionData(name, showErrors = false) {
   try {
-    const res = await fetch(`${API}/api/${name}`);
+    let url = `${API}/api/${name}`;
+    if (name === 'custom') {
+      const [sectionsRes, itemsRes] = await Promise.all([
+        fetch(`${API}/api/custom-sections`),
+        fetch(`${API}/api/custom-items`)
+      ]);
+      allData.custom_sections = await sectionsRes.json();
+      allData.custom_items = await itemsRes.json();
+      allData.custom = allData.custom_sections;
+      renderSection(name, document.getElementById('search-input').value.toLowerCase());
+      updateBadge(name, allData.custom_sections.length);
+      return;
+    }
+    if (name === 'archive' || name === 'trash') {
+      const res = await fetch(`${API}/api/${name}`);
+      const data = await res.json();
+      allData[name] = data;
+      renderSection(name, document.getElementById('search-input').value.toLowerCase());
+      updateBadge(name, data.length);
+      return;
+    }
+    const res = await fetch(url);
     const data = await res.json();
     allData[name] = data;
     renderSection(name, document.getElementById('search-input').value.toLowerCase());
@@ -1619,6 +1837,9 @@ function renderSection(name, q = '') {
   else if (name === 'collections') renderCollections(data);
   else if (name === 'playlists') renderPlaylists(data);
   else if (name === 'notes') renderNotes(data);
+  else if (name === 'archive') renderArchive(data);
+  else if (name === 'trash') renderTrash(data);
+  else if (name === 'custom') renderCustomSections(data);
 }
 
 function renderLinks(links) {
@@ -1828,6 +2049,100 @@ function renderNotes(notes) {
   `).join('');
 }
 
+function renderArchive(items) {
+  const c = document.getElementById('archive-container');
+  if (!items.length) {
+    c.innerHTML = emptyState('🗄️', 'Archive is empty', 'Archive items to keep them safe from your main workspace');
+    return;
+  }
+  c.innerHTML = items.map(item => `
+    <div class="card" id="archived-${item.type}-${item.id}">
+      <div class="card-body">
+        <div class="card-title">${esc(item.title || item.url || item.filename || item.name || 'Untitled')}</div>
+        <div class="card-meta">${esc(item.type)}${item.source ? ' · ' + esc(item.source) : ''}</div>
+        <div class="card-desc">${esc(item.description || item.content || item.url || '')}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-actions">
+          <button class="btn btn-ghost" onclick="restoreFromArchive('${item.type}','${item.id}')">↩ Restore</button>
+          <button class="btn btn-danger" onclick="deleteItemPermanent('${item.type}','${item.id}')">✕ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTrash(items) {
+  const c = document.getElementById('trash-container');
+  if (!items.length) {
+    c.innerHTML = emptyState('🗑️', 'Trash is empty', 'Deleted items are kept here until permanently removed');
+    return;
+  }
+  c.innerHTML = items.map(item => `
+    <div class="card" id="trash-${item.type}-${item.id}">
+      <div class="card-body">
+        <div class="card-title">${esc(item.title || item.url || item.filename || item.note || 'Untitled')}</div>
+        <div class="card-meta">${esc(item.type)}</div>
+        <div class="card-desc">${esc(item.description || item.content || item.url || '')}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-actions">
+          <button class="btn btn-ghost" onclick="restoreItem('${item.type}','${item.id}')">↩ Restore</button>
+          <button class="btn btn-danger" onclick="deleteItemPermanent('${item.type}','${item.id}')">✕ Permanent</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCustomSections(sections) {
+  const c = document.getElementById('custom-sections-container');
+  const itemsC = document.getElementById('custom-items-container');
+  itemsC.style.display = 'none';
+  if (!sections.length) {
+    c.innerHTML = emptyState('🧩', 'No custom sections yet', 'Create a section to group your own tools and notes');
+    return;
+  }
+  c.innerHTML = sections.map(section => `
+    <div class="card" id="custom-section-${section.id}">
+      <div class="card-body" style="cursor:pointer" onclick="openCustomSection('${section.id}')">
+        <div class="card-title">${esc(section.icon || '🧩')} ${esc(section.title)}</div>
+        <div class="card-desc">${esc(section.description || '')}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-actions">
+          <button class="btn btn-danger" onclick="event.stopPropagation();deleteCustomSection('${section.id}')">✕ Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('add-btn').textContent = '+ Add Section';
+}
+
+function renderCustomItems(items, section) {
+  const c = document.getElementById('custom-items-container');
+  c.style.display = 'grid';
+  if (!items.length) {
+    c.innerHTML = emptyState('🧩', 'No items in this section', 'Create notes or links for this custom workspace');
+    return;
+  }
+  c.innerHTML = items.map(item => `
+    <div class="card" id="custom-item-${item.id}">
+      <div class="card-body">
+        <div class="card-title">${esc(item.title)}</div>
+        <div class="card-meta">${esc(item.type || 'item')}</div>
+        <div class="card-desc">${esc(item.content || item.url || '')}</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-actions">
+          <button class="btn btn-ghost" onclick="restoreItem('custom_items','${item.id}')">↩ Restore</button>
+          <button class="btn btn-danger" onclick="deleteItemPermanent('custom_items','${item.id}')">✕ Permanent</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
 function emptyState(icon, text, sub) {
   return `<div class="empty-state" style="grid-column:1/-1">
     <div class="empty-state-icon">${icon}</div>
@@ -1861,8 +2176,17 @@ function openAddModal() {
     pdfs: 'modal-pdfs',
     collections: 'modal-collections',
     playlists: 'modal-playlist-create',
-    notes: 'modal-notes'
+    notes: 'modal-notes',
+    custom: 'modal-custom-section'
   };
+  if (currentSection === 'trash') {
+    emptyTrashConfirm();
+    return;
+  }
+  if (currentSection === 'archive') {
+    showToast('Use the archive item actions to restore or delete archived content.', 'info');
+    return;
+  }
   if (currentSection === 'collections') {
     document.getElementById('collection-title').value = '';
     document.getElementById('collection-description').value = '';
@@ -1886,6 +2210,13 @@ function openAddModal() {
     buildNoteColors('#7c6af7');
     document.getElementById('note-preview').innerHTML = '';
     openModal('modal-notes');
+    return;
+  }
+  if (currentSection === 'custom') {
+    document.getElementById('custom-section-title').value = '';
+    document.getElementById('custom-section-icon').value = '🧩';
+    document.getElementById('custom-section-description').value = '';
+    openModal('modal-custom-section');
     return;
   }
   refreshCollectionInputs();
@@ -1979,6 +2310,56 @@ document.addEventListener('DOMContentLoaded', () => {
       textEl.innerHTML = `<strong>Click or drag</strong> a PDF file here`;
     }
   });
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => switchSection(btn.dataset.section, btn));
+  });
+  const importBtn = document.getElementById('import-export-btn');
+  if (importBtn) importBtn.addEventListener('click', openImportExport);
+  const scanBtn = document.getElementById('scan-seed-btn');
+  if (scanBtn) scanBtn.addEventListener('click', scanSeedImages);
+  const topButtons = [
+    {id:'search-toggle', fn: toggleSearch},
+    {id:'pinned-filter', fn: togglePinnedFilter},
+    {id:'select-toggle', fn: toggleSelectMode},
+    {id:'add-btn', fn: openAddModal}
+  ];
+  topButtons.forEach(item => {
+    const el = document.getElementById(item.id);
+    if (el) el.addEventListener('click', item.fn);
+  });
+  loadSection('links');
+  loadStats();
+  loadStorage();
+  document.addEventListener('touchstart', event => {
+    if (event.touches.length === 1) {
+      touchStartX = event.touches[0].clientX;
+      touchStartY = event.touches[0].clientY;
+    }
+  });
+  document.addEventListener('touchend', event => {
+    if (!touchStartX || !touchStartY) return;
+    const dx = event.changedTouches[0].clientX - touchStartX;
+    const dy = event.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 120 && Math.abs(dx) > Math.abs(dy)) {
+      const order = ['links','videos','images','pdfs','collections','playlists','notes','archive','trash','custom'];
+      const index = order.indexOf(currentSection);
+      if (index >= 0) {
+        const nextIndex = dx > 0 ? Math.max(0, index - 1) : Math.min(order.length - 1, index + 1);
+        if (nextIndex !== index) {
+          const navButton = document.querySelector(`.nav-item[data-section="${order[nextIndex]}"]`);
+          switchSection(order[nextIndex], navButton);
+        }
+      }
+    }
+    if (window.scrollY === 0 && dy > 120 && !pullRefreshing) {
+      pullRefreshing = true;
+      showToast('Refreshing…', 'info');
+      loadSection(currentSection, { force: true }).finally(() => { pullRefreshing = false; });
+    }
+    touchStartX = null;
+    touchStartY = null;
+  });
 });
 
 async function prefetchSectionData() {
@@ -1990,93 +2371,6 @@ async function prefetchSectionData() {
   });
   if (!auxiliaryDataLoaded) {
     loadAuxiliaryData();
-  }
-}
-
-// ── SUBMIT LINK ─────────────────────────────────────────────────────────────
-async function submitLink() {
-  const title = document.getElementById('link-title').value.trim();
-  const url = document.getElementById('link-url').value.trim();
-  if (!title || !url) { showToast('Title and URL required', 'error'); return; }
-  try {
-    const res = await fetch(`${API}/api/links`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title, url,
-        description: document.getElementById('link-desc').value,
-        thumbnail: document.getElementById('link-thumb').value,
-        tags: document.getElementById('link-tags').value
-      })
-    });
-    if (!res.ok) throw new Error();
-    closeModal('modal-links');
-    clearForm(['link-title','link-url','link-desc','link-thumb','link-tags']);
-    await loadSection('links');
-    await loadStats();
-    showToast('Link saved!', 'success');
-  } catch(e) {
-    showToast('Failed to save link', 'error');
-  }
-}
-
-// ── SUBMIT VIDEO ─────────────────────────────────────────────────────────────
-async function submitVideo() {
-  const title = document.getElementById('vid-title').value.trim();
-  if (!title) { showToast('Title required', 'error'); return; }
-
-  const fd = new FormData();
-  fd.append('type', videoType);
-  fd.append('title', title);
-  fd.append('description', document.getElementById('vid-desc').value);
-  fd.append('tags', document.getElementById('vid-tags').value);
-
-  if (videoType === 'url') {
-    fd.append('url', document.getElementById('vid-url').value.trim());
-  } else if (videoType === 'upload') {
-    const file = document.getElementById('vid-file').files[0];
-    if (!file) { showToast('Select a video file', 'error'); return; }
-    fd.append('file', file);
-  } else if (videoType === 'embed') {
-    fd.append('embed_code', document.getElementById('vid-embed').value.trim());
-  }
-
-  showToast('Uploading…', 'info');
-  try {
-    const res = await fetch(`${API}/api/videos`, { method: 'POST', body: fd });
-    if (!res.ok) throw new Error();
-    closeModal('modal-videos');
-    clearForm(['vid-title','vid-url','vid-desc','vid-tags','vid-embed']);
-    document.getElementById('embed-preview').style.display = 'none';
-    await loadSection('videos');
-    await loadStats();
-    showToast('Video saved!', 'success');
-  } catch(e) {
-    showToast('Failed to save video', 'error');
-  }
-}
-
-// ── SUBMIT IMAGES ────────────────────────────────────────────────────────────
-async function submitImages() {
-  const files = document.getElementById('img-files').files;
-  if (!files.length) { showToast('Select images', 'error'); return; }
-
-  const fd = new FormData();
-  fd.append('tags', document.getElementById('img-tags').value);
-  Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => fd.append('files', f));
-
-  showToast('Uploading images…', 'info');
-  try {
-    const res = await fetch(`${API}/api/images`, { method: 'POST', body: fd });
-    if (!res.ok) throw new Error();
-    closeModal('modal-images');
-    clearForm(['img-tags']);
-    document.getElementById('img-preview-list').innerHTML = '';
-    await loadSection('images');
-    await loadStats();
-    showToast('Images uploaded!', 'success');
-  } catch(e) {
-    showToast('Failed to upload images', 'error');
   }
 }
 
@@ -2174,14 +2468,132 @@ async function deleteItem(type, id) {
   if (!confirm('Remove this item?')) return;
   try {
     await fetch(`${API}/api/${type}/${id}`, { method: 'DELETE' });
-    allData[type] = allData[type].filter(i => i.id !== id);
-    renderSection(type, document.getElementById('search-input').value.toLowerCase());
-    updateBadge(type, allData[type].length);
+    if (allData[type]) {
+      allData[type] = allData[type].filter(i => i.id !== id);
+      renderSection(type, document.getElementById('search-input').value.toLowerCase());
+      updateBadge(type, allData[type].length);
+    }
     loadStats();
     showToast('Removed', 'success');
   } catch(e) {
     showToast('Failed to delete', 'error');
   }
+}
+
+async function deleteItemPermanent(type, id) {
+  if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+  try {
+    await fetch(`${API}/api/${type}/${id}/permanent`, { method: 'DELETE' });
+    if (allData[type]) {
+      allData[type] = allData[type].filter(i => i.id !== id);
+    }
+    if (currentSection === 'trash' || currentSection === 'archive' || currentSection === 'custom') {
+      await loadSection(currentSection, { force: true });
+    }
+    if (type === 'custom_items') {
+      await loadSection('custom', { force: true });
+    }
+    showToast('Deleted permanently', 'success');
+  } catch(e) {
+    showToast('Failed to delete permanently', 'error');
+  }
+}
+
+async function restoreItem(type, id) {
+  try {
+    await fetch(`${API}/api/${type}/${id}/restore`, { method: 'PATCH' });
+    if (currentSection === 'trash') {
+      await loadSection('trash', { force: true });
+    }
+    if (type === 'custom_items') {
+      await loadSection('custom', { force: true });
+    } else {
+      await loadSection(type, { force: true });
+    }
+    showToast('Restored', 'success');
+  } catch(e) {
+    showToast('Restore failed', 'error');
+  }
+}
+
+async function restoreFromArchive(type, id) {
+  try {
+    await fetch(`${API}/api/${type}/${id}/archive`, { method: 'PATCH' });
+    if (currentSection === 'archive') {
+      await loadSection('archive', { force: true });
+    }
+    if (type === 'custom_items') {
+      await loadSection('custom', { force: true });
+    } else {
+      await loadSection(type, { force: true });
+    }
+    showToast('Restored from archive', 'success');
+  } catch(e) {
+    showToast('Restore failed', 'error');
+  }
+}
+
+async function emptyTrashConfirm() {
+  if (!confirm('Empty trash and permanently delete all trashed items?')) return;
+  try {
+    await fetch(`${API}/api/trash/empty`, { method: 'DELETE' });
+    allData.trash = [];
+    updateBadge('trash', 0);
+    renderSection('trash', document.getElementById('search-input').value.toLowerCase());
+    showToast('Trash emptied', 'success');
+  } catch(e) {
+    showToast('Failed to empty trash', 'error');
+  }
+}
+
+async function openCustomSection(sectionId) {
+  const section = allData.custom_sections.find(s => s.id === sectionId);
+  if (!section) return;
+  const items = allData.custom_items.filter(i => i.section_id === sectionId && !i.trashed && !i.archived);
+  renderCustomItems(items, section);
+  showToast(`Opened section ${section.title}`, 'success');
+}
+
+async function deleteCustomSection(sectionId) {
+  if (!confirm('Delete this custom section and its items?')) return;
+  try {
+    await fetch(`${API}/api/custom-sections/${sectionId}`, { method: 'DELETE' });
+    allData.custom_sections = allData.custom_sections.filter(s => s.id !== sectionId);
+    allData.custom_items = allData.custom_items.filter(i => i.section_id !== sectionId);
+    renderSection('custom', document.getElementById('search-input').value.toLowerCase());
+    updateBadge('custom', allData.custom_sections.length);
+    showToast('Section removed', 'success');
+  } catch(e) {
+    showToast('Failed to delete section', 'error');
+  }
+}
+
+async function loadStorage() {
+  try {
+    const res = await fetch(`${API}/api/storage`);
+    const storage = await res.json();
+    const folders = ['images', 'videos', 'thumbnails'];
+    const maxSize = Math.max(storage.images.size, storage.videos.size, storage.thumbnails.size, 1);
+    folders.forEach(name => {
+      const size = storage[name].size || 0;
+      const count = storage[name].count || 0;
+      document.getElementById(`storage-${name}`).textContent = `${count} files, ${formatBytes(size)}`;
+      document.getElementById(`storage-${name}-fill`).style.width = `${Math.round((size / maxSize) * 100)}%`;
+    });
+  } catch(e) {
+    showToast('Unable to load storage usage', 'error');
+  }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  const units = ['KB','MB','GB','TB'];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) {
+    bytes /= 1024;
+    i++;
+  }
+  return `${bytes.toFixed(1)} ${units[i]}`;
 }
 
 // ── LIGHTBOX ─────────────────────────────────────────────────────────────────
@@ -2610,6 +3022,26 @@ async function submitPlaylist() {
   }
 }
 
+async function submitCustomSection() {
+  const title = document.getElementById('custom-section-title').value.trim();
+  const icon = document.getElementById('custom-section-icon').value.trim() || '🧩';
+  const description = document.getElementById('custom-section-description').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/custom-sections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, icon, description })
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-custom-section');
+    await loadSection('custom', { force: true });
+    showToast('Custom section created', 'success');
+  } catch (e) {
+    showToast('Failed to create section', 'error');
+  }
+}
+
 async function submitChapter() {
   const title = document.getElementById('chapter-title').value.trim();
   if (!title || !currentCollectionId) { showToast('Chapter title required', 'error'); return; }
@@ -2811,12 +3243,8 @@ async function submitPdf() {
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
   await loadStats();
+  prefetchSectionData();
   await loadSection('links');
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(prefetchSectionData);
-  } else {
-    setTimeout(prefetchSectionData, 200);
-  }
 })();
 </script>
 </body>

@@ -220,6 +220,26 @@
     color: var(--accent2);
   }
 
+  #fab-add {
+    display: none;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 24px;
+    border: none;
+    box-shadow: 0 4px 20px var(--accent-glow);
+    z-index: 200;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+  }
+
   @media (max-width: 960px) {
     .topbar { padding: 0 16px; }
   }
@@ -232,6 +252,59 @@
     .mobile-nav { display: flex; justify-content: space-between; }
     .nav-item { font-size: 13px; padding: 10px 14px; }
     .mobile-nav button { width: calc(100% / 4 - 8px); }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none !important;
+    }
+    .main {
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+    .topbar {
+      padding: 0 10px !important;
+      height: 56px !important;
+    }
+    .topbar-title {
+      font-size: 15px !important;
+    }
+    .topbar-actions {
+      gap: 6px !important;
+    }
+    .topbar-actions .btn {
+      padding: 7px 10px !important;
+      font-size: 12px !important;
+    }
+    .content {
+      padding: 16px !important;
+      padding-bottom: 90px !important;
+    }
+    .cards-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .gallery-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .stats-row {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .info-box {
+      font-size: 12px !important;
+      padding: 10px 12px !important;
+    }
+    .modal-overlay {
+      padding: 0 !important;
+      align-items: flex-end !important;
+    }
+    .modal {
+      max-width: 100% !important;
+      border-radius: 16px 16px 0 0 !important;
+      max-height: 85vh !important;
+    }
+    .mobile-nav {
+      display: flex !important;
+    }
   }
 
   .scan-btn {
@@ -528,18 +601,115 @@
     background: rgba(124,106,247,0.08);
     border-color: var(--accent);
   }
+
+  .card-thumb {
+    width: 100%;
+    height: 160px;
     object-fit: cover;
-    background: var(--surface2);
     display: block;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
   }
 
   .card-thumb-placeholder {
-    width: 100%; height: 160px;
-    background: var(--surface2);
+    width: 100%;
+    height: 160px;
+    background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
     display: flex; align-items: center; justify-content: center;
-    font-size: 36px;
-    color: var(--text3);
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    color: var(--text);
     border-bottom: 1px solid var(--border);
+  }
+
+  .card-thumb-placeholder .video-type-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  .pdf-card-banner {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+  }
+
+  .pdf-card-banner .pdf-card-icon {
+    font-size: 48px;
+  }
+
+  .pdf-card-banner .pdf-card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #d9534f;
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .pdf-card-banner .pdf-card-title {
+    position: absolute;
+    bottom: 10px;
+    left: 16px;
+    right: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .link-card-banner {
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(135deg, var(--surface2), var(--surface3));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    text-align: center;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .link-card-banner .link-card-favicon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    font-size: 24px;
+  }
+
+  .link-card-banner .link-card-domain {
+    font-size: 12px;
+    color: var(--text3);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 100%;
   }
 
   .card-body {
@@ -958,6 +1128,10 @@
     overflow: hidden;
   }
 
+  .video-placeholder-icon {
+    font-size: 44px;
+  }
+
   .play-overlay {
     position: absolute; inset: 0;
     display: flex; align-items: center; justify-content: center;
@@ -1119,9 +1293,9 @@
   <header class="topbar">
     <div class="topbar-title" id="section-title">🔗 Links</div>
     <div class="topbar-actions">
-      <button type="button" class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 Search</button>
-      <button type="button" class="btn btn-ghost" id="pinned-filter" onclick="togglePinnedFilter()">📌 Pinned</button>
-      <button type="button" class="btn btn-ghost" id="select-toggle" onclick="toggleSelectMode()">☑️ Select</button>
+      <button type="button" class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 <span>Search</span></button>
+      <button type="button" class="btn btn-ghost" id="pinned-filter" onclick="togglePinnedFilter()">📌 <span>Pinned</span></button>
+      <button type="button" class="btn btn-ghost" id="select-toggle" onclick="toggleSelectMode()">☑️ <span>Select</span></button>
       <button type="button" class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Resource</button>
     </div>
   </header>
@@ -1243,6 +1417,7 @@
   <button type="button" onclick="switchSection('trash', this)">🗑️</button>
   <button type="button" onclick="switchSection('custom', this)">🧩</button>
 </div>
+<button id="fab-add" onclick="openAddModal()" aria-label="Add resource">+</button>
 
 <!-- ── ADD LINK MODAL ── -->
 <div class="modal-overlay" id="modal-links">
@@ -1868,15 +2043,10 @@ function renderLinks(links) {
   c.innerHTML = links.map(link => `
     <div class="card${link.pinned ? ' pinned' : ''}" id="link-${link.id}">
       ${renderCheckbox('links', link.id)}
-      ${link.thumbnail ? `<img class="card-thumb" src="${link.thumbnail}" alt="${esc(link.title)}" onerror="this.style.display='none'" />` : ''}
-      <div class="link-card-header">
-        ${!link.thumbnail ? (link.favicon ? `<img class="favicon" src="${link.favicon}" onerror="this.style.display='none'" />` : '<div class="favicon" style="background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>') : ''}
-        <div style="min-width:0;flex:1">
-          <div class="card-title">${esc(link.title)}</div>
-          <div class="card-meta">${esc(getDomain(link.url))}</div>
-        </div>
-      </div>
+      ${link.thumbnail ? `<img class="card-thumb" src="${link.thumbnail}" alt="${esc(link.title)}" onerror="this.style.display='none'" />` : `<div class="link-card-banner">${link.favicon ? `<div class="link-card-favicon"><img src="${link.favicon}" alt="favicon" style="width:24px;height:24px;object-fit:contain;" onerror="this.style.display='none'" /></div>` : '<div class="link-card-favicon">🌐</div>'}<div class="link-card-domain">${esc(getDomain(link.url))}</div></div>`}
       <div class="card-body">
+        <div class="card-title">${esc(link.title)}</div>
+        <div class="card-meta">${esc(getDomain(link.url))}</div>
         ${link.description ? `<div class="card-desc">${esc(link.description)}</div>` : '<div class="card-desc" style="color:var(--text3)">No description</div>'}
       </div>
       <div class="card-footer">
@@ -1904,7 +2074,7 @@ function renderVideos(videos) {
       <div class="video-thumb-wrapper" onclick="playVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">
         ${v.thumbnail
           ? `<img class="card-thumb" src="${v.thumbnail}" alt="${esc(v.title)}" />`
-          : `<div class="card-thumb-placeholder">${v.type === 'upload' ? '📹' : '🎬'}</div>`
+          : `<div class="card-thumb-placeholder"><div class="video-placeholder-icon">🎬</div><div class="video-type-badge">${v.type === 'url' ? 'URL' : v.type === 'upload' ? 'UPLOAD' : 'EMBED'}</div></div>`
         }
         <div class="play-overlay"><div class="play-btn">▶</div></div>
       </div>
@@ -1960,9 +2130,12 @@ function renderPdfs(pdfs) {
     return `
       <div class="card${pdf.pinned ? ' pinned' : ''}" id="pdf-${pdf.id}">
         ${renderCheckbox('pdfs', pdf.id)}
-        <div class="card-thumb-placeholder">📄</div>
+        <div class="pdf-card-banner">
+          <div class="pdf-card-icon">📄</div>
+          <div class="pdf-card-badge">.PDF</div>
+          <div class="pdf-card-title">${esc(pdf.title)}</div>
+        </div>
         <div class="card-body">
-          <div class="card-title">${esc(pdf.title)}</div>
           <div class="card-meta">${pdf.type === 'upload' ? 'Uploaded PDF' : esc(getDomain(pdf.url))}</div>
           ${pdf.description ? `<div class="card-desc">${esc(pdf.description)}</div>` : '<div class="card-desc" style="color:var(--text3)">No description</div>'}
         </div>

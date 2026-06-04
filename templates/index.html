@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ResourceVault</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --surface3: #22222c;
+    --border: #2a2a38;
+    --border2: #35354a;
+    --accent: #7c6af7;
+    --accent2: #a594ff;
+    --accent-glow: rgba(124,106,247,0.25);
+    --gold: #f0c060;
+    --green: #50e3a4;
+    --red: #ff5e6c;
+    --blue: #4fa8ff;
+    --text: #e8e8f0;
+    --text2: #9898b8;
+    --text3: #5a5a7a;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 100;
+    padding: 0;
+  }
+
+  .logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo-mark span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    font-size: 16px;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 4px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .nav { flex: 1; padding: 12px 0; }
+
+  .nav-section {
+    padding: 8px 16px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    margin-top: 8px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: all 0.15s;
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+
+  .nav-item::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    transform: scaleY(0);
+    transition: transform 0.2s;
+  }
+
+  .nav-item:hover {
+    color: var(--text);
+    background: var(--surface2);
+  }
+
+  .nav-item.active {
+    color: var(--accent2);
+    background: rgba(124,106,247,0.1);
+  }
+
+  .nav-item.active::before {
+    transform: scaleY(1);
+  }
+
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--surface3);
+    color: var(--text3);
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .nav-item.active .nav-badge {
+    background: rgba(124,106,247,0.2);
+    color: var(--accent2);
+  }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .scan-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .scan-btn:hover {
+    background: rgba(124,106,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 240px;
+    min-height: 100vh;
+    position: relative; z-index: 1;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    height: 64px;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px 0 27px;
+    position: sticky; top: 0; z-index: 50;
+  }
+
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.3px;
+  }
+
+  .topbar-actions { display: flex; gap: 10px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(124,106,247,0.35);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent2);
+    box-shadow: 0 6px 22px rgba(124,106,247,0.5);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    background: var(--surface3);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  .btn-danger {
+    background: rgba(255,94,108,0.1);
+    color: var(--red);
+    border: 1px solid rgba(255,94,108,0.2);
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .btn-danger:hover {
+    background: rgba(255,94,108,0.2);
+    border-color: var(--red);
+  }
+
+  /* ── CONTENT AREA ── */
+  .content {
+    padding: 32px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── STATS BAR ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    display: flex; align-items: center; gap: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card:hover { border-color: var(--border2); }
+
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  .stat-icon.links { background: rgba(79,168,255,0.15); }
+  .stat-icon.videos { background: rgba(80,227,164,0.15); }
+  .stat-icon.images { background: rgba(240,192,96,0.15); }
+
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .search-bar input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text3); }
+
+  .search-icon {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  /* ── CARDS GRID ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.2s;
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  .card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .card-thumb {
+    width: 100%; height: 160px;
+    object-fit: cover;
+    background: var(--surface2);
+    display: block;
+  }
+
+  .card-thumb-placeholder {
+    width: 100%; height: 160px;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-body {
+    padding: 16px;
+    flex: 1;
+    display: flex; flex-direction: column;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .card-meta {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 10px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  .tag {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--surface3);
+    color: var(--text2);
+  }
+
+  .card-actions { display: flex; gap: 6px; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  .badge-url { background: rgba(79,168,255,0.15); color: var(--blue); }
+  .badge-upload { background: rgba(80,227,164,0.15); color: var(--green); }
+  .badge-embed { background: rgba(240,192,96,0.15); color: var(--gold); }
+
+  /* Link cards specific */
+  .link-card-header {
+    padding: 16px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .favicon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+
+  /* ── IMAGE GALLERY ── */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .gallery-item {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    aspect-ratio: 1;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .gallery-item:hover { border-color: var(--accent); transform: scale(1.02); }
+
+  .gallery-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s;
+  }
+
+  .gallery-item:hover img { transform: scale(1.05); }
+
+  .gallery-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    opacity: 0; transition: opacity 0.2s;
+    display: flex; align-items: flex-end; padding: 12px;
+  }
+
+  .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+  .gallery-name {
+    font-size: 13px; font-weight: 600;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .gallery-del {
+    position: absolute; top: 8px; right: 8px;
+    width: 28px; height: 28px;
+    background: rgba(255,94,108,0.9);
+    border: none; border-radius: 6px;
+    color: white; font-size: 13px;
+    cursor: pointer; opacity: 0; transition: opacity 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .gallery-item:hover .gallery-del { opacity: 1; }
+
+  .order-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(124,106,247,0.9);
+    color: white; font-size: 11px;
+    padding: 2px 7px; border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* ── UPLOAD DROP ZONE ── */
+  .dropzone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(124,106,247,0.08);
+  }
+
+  .dropzone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .dropzone-icon { font-size: 40px; margin-bottom: 12px; }
+  .dropzone-text { color: var(--text2); font-size: 14px; }
+  .dropzone-text strong { color: var(--accent2); }
+  .dropzone-sub { font-size: 12px; color: var(--text3); margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    width: 100%; max-width: 540px;
+    max-height: 90vh; overflow-y: auto;
+    animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  }
+
+  @keyframes modalIn {
+    from { transform: scale(0.92) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .modal-close {
+    width: 32px; height: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer; color: var(--text2);
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { background: var(--surface3); color: var(--text); }
+
+  .modal-body { padding: 24px; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 18px; }
+
+  .form-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s;
+    outline: none;
+    resize: vertical;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--text3); }
+
+  textarea.form-input { min-height: 80px; }
+
+  .type-tabs {
+    display: flex; gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .type-tab {
+    flex: 1; padding: 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+
+  .type-tab.active {
+    background: rgba(124,106,247,0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .type-panel { display: none; }
+  .type-panel.active { display: block; }
+
+  /* ── EMBED PREVIEW ── */
+  .embed-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  .embed-preview iframe {
+    width: 100%; height: 200px; border: none; display: block;
+  }
+
+  /* ── VIDEO PLAYER ── */
+  .video-player-modal { max-width: 800px; }
+
+  .video-player-modal video {
+    width: 100%; border-radius: var(--radius);
+    background: #000;
+  }
+
+  .video-embed-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0; overflow: hidden;
+    border-radius: var(--radius);
+  }
+
+  .video-embed-container iframe {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none; border-radius: var(--radius);
+  }
+
+  /* ── IMAGE LIGHTBOX ── */
+  .lightbox-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.95);
+    display: none; align-items: center; justify-content: center;
+  }
+
+  .lightbox-overlay.open { display: flex; }
+
+  .lightbox-overlay img {
+    max-width: 90vw; max-height: 90vh;
+    object-fit: contain;
+    border-radius: var(--radius);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8);
+  }
+
+  .lightbox-close {
+    position: absolute; top: 20px; right: 20px;
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.1);
+    border: none; border-radius: 50%;
+    color: white; font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* ── TOAST ── */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    animation: toastIn 0.3s ease;
+    display: flex; align-items: center; gap: 10px;
+    min-width: 260px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--red); }
+  .toast.info { border-left: 3px solid var(--blue); }
+
+  @keyframes toastIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+  }
+
+  .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+  .empty-state-text {
+    font-size: 15px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .empty-state-sub { font-size: 13px; }
+
+  /* ── LOADING ── */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    color: var(--text3);
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── VIDEO THUMB ── */
+  .video-thumb-wrapper {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .play-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.3);
+    opacity: 0; transition: opacity 0.2s;
+  }
+
+  .card:hover .play-overlay { opacity: 1; }
+
+  .play-btn {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transform: scale(0.9);
+    transition: transform 0.2s;
+  }
+
+  .card:hover .play-btn { transform: scale(1); }
+
+  /* ── PROGRESS ── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ── VIDEO SECTION HINT ── */
+  .info-box {
+    background: rgba(124,106,247,0.08);
+    border: 1px solid rgba(124,106,247,0.2);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 24px;
+    display: flex; align-items: flex-start; gap: 10px;
+    line-height: 1.5;
+  }
+
+  .info-box-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+
+  code {
+    background: var(--surface3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      
+      ResourceVault
+    </div>
+    <div class="logo-sub">Resource Manager</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Library</div>
+    <button class="nav-item active" data-section="links" onclick="switchSection('links', this)">
+      <span class="nav-icon">🔗</span>
+      Links
+      <span class="nav-badge" id="badge-links">0</span>
+    </button>
+    <button class="nav-item" data-section="videos" onclick="switchSection('videos', this)">
+      <span class="nav-icon">🎬</span>
+      Videos
+      <span class="nav-badge" id="badge-videos">0</span>
+    </button>
+    <button class="nav-item" data-section="images" onclick="switchSection('images', this)">
+      <span class="nav-icon">🖼️</span>
+      Images
+      <span class="nav-badge" id="badge-images">0</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="scan-btn" onclick="scanSeedImages()">
+      ⟳ &nbsp;Scan seed_images/
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-title" id="section-title">🔗 Links</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="search-toggle" onclick="toggleSearch()">🔍 Search</button>
+      <button class="btn btn-primary" id="add-btn" onclick="openAddModal()">+ Add Resource</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <!-- STATS -->
+    <div class="stats-row" id="stats-row" style="display:none">
+      <div class="stat-card">
+        <div class="stat-icon links">🔗</div>
+        <div>
+          <div class="stat-num" id="stat-links">0</div>
+          <div class="stat-label">Links Saved</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon videos">🎬</div>
+        <div>
+          <div class="stat-num" id="stat-videos">0</div>
+          <div class="stat-label">Videos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon images">🖼️</div>
+        <div>
+          <div class="stat-num" id="stat-images">0</div>
+          <div class="stat-label">Images</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div class="search-bar" id="search-bar" style="display:none">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="Search resources…" id="search-input" oninput="handleSearch()" />
+    </div>
+
+    <!-- LINKS SECTION -->
+    <div class="section active" id="section-links">
+      <div id="links-container" class="cards-grid"></div>
+    </div>
+
+    <!-- VIDEOS SECTION -->
+    <div class="section" id="section-videos">
+      <div class="info-box">
+        <span class="info-box-icon">💡</span>
+        <span>Add videos via <strong>URL</strong> (YouTube/Vimeo auto-fetches thumbnail), <strong>upload</strong> your own file, or paste raw <strong>embed code</strong> from any platform. Thumbnails are fetched automatically.</span>
+      </div>
+      <div id="videos-container" class="cards-grid"></div>
+    </div>
+
+    <!-- IMAGES SECTION -->
+    <div class="section" id="section-images">
+      <div class="info-box">
+        <span class="info-box-icon">💡</span>
+        <span>
+          Upload a folder of images — they auto-sort by filename number (<code>1.jpg</code>, <code>2.png</code>…).
+          Or drop images named numerically directly into <code>seed_images/</code> in the project folder, then click <strong>Scan seed_images/</strong> in the sidebar.
+        </span>
+      </div>
+      <div id="images-container" class="gallery-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD LINK MODAL ── -->
+<div class="modal-overlay" id="modal-links">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Link</div>
+      <button class="modal-close" onclick="closeModal('modal-links')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="link-title" placeholder="Resource name…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL *</label>
+        <input class="form-input" id="link-url" placeholder="https://…" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="link-desc" placeholder="What's this about?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma separated)</label>
+        <input class="form-input" id="link-tags" placeholder="design, tools, reference…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitLink()">Save Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD VIDEO MODAL ── -->
+<div class="modal-overlay" id="modal-videos">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Video</div>
+      <button class="modal-close" onclick="closeModal('modal-videos')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="vid-title" placeholder="Video title…" />
+      </div>
+      <div class="type-tabs">
+        <button class="type-tab active" onclick="setVideoType('url', this)">🌐 URL</button>
+        <button class="type-tab" onclick="setVideoType('upload', this)">📁 Upload</button>
+        <button class="type-tab" onclick="setVideoType('embed', this)">&lt;/&gt; Embed</button>
+      </div>
+      <div class="type-panel active" id="panel-url">
+        <div class="form-group">
+          <label class="form-label">Video URL</label>
+          <input class="form-input" id="vid-url" placeholder="YouTube, Vimeo, or direct video URL…" />
+        </div>
+      </div>
+      <div class="type-panel" id="panel-upload">
+        <div class="dropzone" id="vid-dropzone">
+          <input type="file" id="vid-file" accept="video/*" />
+          <div class="dropzone-icon">📹</div>
+          <div class="dropzone-text"><strong>Click or drag</strong> a video file here</div>
+          <div class="dropzone-sub">MP4, WebM, MOV, AVI, MKV — up to 500MB</div>
+          <div class="progress-bar" id="vid-progress" style="display:none">
+            <div class="progress-fill" id="vid-progress-fill" style="width:0"></div>
+          </div>
+        </div>
+      </div>
+      <div class="type-panel" id="panel-embed">
+        <div class="form-group">
+          <label class="form-label">Embed Code</label>
+          <textarea class="form-input" id="vid-embed" placeholder='&lt;iframe src="https://…" …&gt;&lt;/iframe&gt;' style="min-height:100px;font-family:'DM Mono',monospace;font-size:12px"></textarea>
+        </div>
+        <div id="embed-preview" class="embed-preview" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="vid-desc" placeholder="Optional description…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <input class="form-input" id="vid-tags" placeholder="tutorial, design…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitVideo()">Save Video</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD IMAGES MODAL ── -->
+<div class="modal-overlay" id="modal-images">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Upload Images</div>
+      <button class="modal-close" onclick="closeModal('modal-images')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="dropzone" id="img-dropzone">
+        <input type="file" id="img-files" accept="image/*" multiple webkitdirectory />
+        <div class="dropzone-icon">🖼️</div>
+        <div class="dropzone-text"><strong>Click to select folder or files</strong></div>
+        <div class="dropzone-sub">Images named 1.jpg, 2.png… auto-sort by number</div>
+      </div>
+      <div id="img-preview-list" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+      <div class="form-group">
+        <label class="form-label">Tags (optional)</label>
+        <input class="form-input" id="img-tags" placeholder="portfolio, renders…" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="submitImages()">Upload Images</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIDEO PLAYER MODAL ── -->
+<div class="modal-overlay" id="modal-player">
+  <div class="modal video-player-modal">
+    <div class="modal-header">
+      <div class="modal-title" id="player-title">Video</div>
+      <button class="modal-close" onclick="closeModal('modal-player')">✕</button>
+    </div>
+    <div class="modal-body" id="player-body"></div>
+  </div>
+</div>
+
+<!-- ── LIGHTBOX ── -->
+<div class="lightbox-overlay" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<!-- TOASTS -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+const API = '';
+let currentSection = 'links';
+let videoType = 'url';
+let allData = { links: [], videos: [], images: [] };
+
+// ── SECTION SWITCH ──────────────────────────────────────────────────────────
+function switchSection(name, el) {
+  currentSection = name;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  el.classList.add('active');
+  const titles = { links: '🔗 Links', videos: '🎬 Videos', images: '🖼️ Images' };
+  document.getElementById('section-title').textContent = titles[name];
+  loadSection(name);
+}
+
+function toggleSearch() {
+  const bar = document.getElementById('search-bar');
+  bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+  if (bar.style.display === 'block') document.getElementById('search-input').focus();
+}
+
+function handleSearch() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  renderSection(currentSection, q);
+}
+
+// ── LOAD DATA ──────────────────────────────────────────────────────────────
+async function loadSection(name) {
+  if (name === 'images') {
+    showLoading('images-container', 'gallery-grid');
+  } else {
+    showLoading(name + '-container', 'cards-grid');
+  }
+  try {
+    const res = await fetch(`${API}/api/${name}`);
+    allData[name] = await res.json();
+    renderSection(name, document.getElementById('search-input').value.toLowerCase());
+    updateBadge(name, allData[name].length);
+  } catch(e) {
+    showToast('Failed to load ' + name, 'error');
+  }
+}
+
+function showLoading(id, cls) {
+  document.getElementById(id).innerHTML = `<div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>`;
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/api/stats`);
+    const s = await res.json();
+    document.getElementById('stat-links').textContent = s.links;
+    document.getElementById('stat-videos').textContent = s.videos;
+    document.getElementById('stat-images').textContent = s.images;
+    updateBadge('links', s.links);
+    updateBadge('videos', s.videos);
+    updateBadge('images', s.images);
+  } catch(e) {}
+}
+
+function updateBadge(name, count) {
+  const el = document.getElementById('badge-' + name);
+  if (el) el.textContent = count;
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderSection(name, q = '') {
+  const data = allData[name].filter(item => {
+    if (!q) return true;
+    const str = JSON.stringify(item).toLowerCase();
+    return str.includes(q);
+  });
+
+  if (name === 'links') renderLinks(data);
+  else if (name === 'videos') renderVideos(data);
+  else if (name === 'images') renderImages(data);
+}
+
+function renderLinks(links) {
+  const c = document.getElementById('links-container');
+  if (!links.length) {
+    c.innerHTML = emptyState('🔗', 'No links yet', 'Add your first link resource');
+    return;
+  }
+  c.innerHTML = links.map(link => `
+    <div class="card" id="link-${link.id}">
+      <div class="link-card-header">
+        ${link.favicon ? `<img class="favicon" src="${link.favicon}" onerror="this.style.display='none'" />` : '<div class="favicon" style="background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:14px">🌐</div>'}
+        <div style="min-width:0;flex:1">
+          <div class="card-title">${esc(link.title)}</div>
+          <div class="card-meta">${esc(getDomain(link.url))}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        ${link.description ? `<div class="card-desc">${esc(link.description)}</div>` : '<div class="card-desc" style="color:var(--text3)">No description</div>'}
+      </div>
+      <div class="card-footer">
+        <div class="card-tags">${renderTags(link.tags)}</div>
+        <div class="card-actions">
+          <a href="${link.url}" target="_blank" class="btn btn-ghost" style="padding:6px 12px;font-size:12px;text-decoration:none">↗ Open</a>
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();navigator.clipboard.writeText('${link.url}').then(()=>showToast('Link copied!','success'))">⎘ Copy</button>
+          <button class="btn btn-danger" onclick="deleteItem('links','${link.id}')">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderVideos(videos) {
+  const c = document.getElementById('videos-container');
+  if (!videos.length) {
+    c.innerHTML = emptyState('🎬', 'No videos yet', 'Add a YouTube URL, upload a file, or paste embed code');
+    return;
+  }
+  c.innerHTML = videos.map(v => `
+    <div class="card" id="video-${v.id}">
+      <div class="video-thumb-wrapper" onclick="playVideo(${JSON.stringify(v).replace(/"/g,'&quot;')})">
+        ${v.thumbnail
+          ? `<img class="card-thumb" src="${v.thumbnail}" alt="${esc(v.title)}" />`
+          : `<div class="card-thumb-placeholder">${v.type === 'upload' ? '📹' : '🎬'}</div>`
+        }
+        <div class="play-overlay"><div class="play-btn">▶</div></div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(v.title)}</div>
+        ${v.description ? `<div class="card-desc">${esc(v.description)}</div>` : ''}
+      </div>
+      <div class="card-footer">
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge badge-${v.type}">${v.type === 'url' ? '🌐' : v.type === 'upload' ? '📁' : '</>'} ${v.type}</span>
+          ${renderTags(v.tags)}
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-danger" onclick="deleteItem('videos','${v.id}')">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderImages(images) {
+  const c = document.getElementById('images-container');
+  if (!images.length) {
+    c.innerHTML = emptyState('🖼️', 'No images yet', 'Upload a folder or drop images in seed_images/');
+    return;
+  }
+  c.className = 'gallery-grid';
+  c.innerHTML = images.map((img, i) => `
+    <div class="gallery-item" id="img-${img.id}">
+      <img src="/uploads/images/${img.filename}" alt="${esc(img.title)}" loading="lazy" onclick="openLightbox('/uploads/images/${img.filename}')" />
+      <div class="gallery-overlay">
+        <span class="gallery-name">${esc(img.title)}</span>
+      </div>
+      <span class="order-badge">#${img.sort_order || i+1}</span>
+      <button class="gallery-del" onclick="event.stopPropagation();deleteItem('images','${img.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function emptyState(icon, text, sub) {
+  return `<div class="empty-state" style="grid-column:1/-1">
+    <div class="empty-state-icon">${icon}</div>
+    <div class="empty-state-text">${text}</div>
+    <div class="empty-state-sub">${sub}</div>
+  </div>`;
+}
+
+function renderTags(tags) {
+  if (!tags) return '';
+  return tags.split(',').filter(t=>t.trim()).map(t => `<span class="tag">${esc(t.trim())}</span>`).join('');
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────────
+function openAddModal() {
+  const m = { links: 'modal-links', videos: 'modal-videos', images: 'modal-images' };
+  openModal(m[currentSection]);
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // Clear player
+  if (id === 'modal-player') {
+    document.getElementById('player-body').innerHTML = '';
+  }
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) el.classList.remove('open');
+  });
+});
+
+// ── VIDEO TYPE ──────────────────────────────────────────────────────────────
+function setVideoType(type, btn) {
+  videoType = type;
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.type-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + type).classList.add('active');
+}
+
+// Embed preview
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('vid-embed').addEventListener('input', e => {
+    const prev = document.getElementById('embed-preview');
+    const code = e.target.value.trim();
+    if (code.includes('<iframe') || code.includes('<video')) {
+      prev.style.display = 'block';
+      prev.innerHTML = code;
+    } else {
+      prev.style.display = 'none';
+    }
+  });
+
+  // Image preview
+  document.getElementById('img-files').addEventListener('change', function() {
+    const list = document.getElementById('img-preview-list');
+    list.innerHTML = '';
+    const files = Array.from(this.files).filter(f => f.type.startsWith('image/')).slice(0, 8);
+    files.forEach(f => {
+      const img = document.createElement('img');
+      img.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border)';
+      img.src = URL.createObjectURL(f);
+      list.appendChild(img);
+    });
+    if (this.files.length > 8) {
+      const more = document.createElement('div');
+      more.style.cssText = 'display:flex;align-items:center;color:var(--text3);font-size:13px;padding:0 8px';
+      more.textContent = `+${this.files.length - 8} more`;
+      list.appendChild(more);
+    }
+  });
+});
+
+// ── SUBMIT LINK ─────────────────────────────────────────────────────────────
+async function submitLink() {
+  const title = document.getElementById('link-title').value.trim();
+  const url = document.getElementById('link-url').value.trim();
+  if (!title || !url) { showToast('Title and URL required', 'error'); return; }
+  try {
+    const res = await fetch(`${API}/api/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, url,
+        description: document.getElementById('link-desc').value,
+        tags: document.getElementById('link-tags').value
+      })
+    });
+    if (!res.ok) throw new Error();
+    closeModal('modal-links');
+    clearForm(['link-title','link-url','link-desc','link-tags']);
+    await loadSection('links');
+    await loadStats();
+    showToast('Link saved!', 'success');
+  } catch(e) {
+    showToast('Failed to save link', 'error');
+  }
+}
+
+// ── SUBMIT VIDEO ─────────────────────────────────────────────────────────────
+async function submitVideo() {
+  const title = document.getElementById('vid-title').value.trim();
+  if (!title) { showToast('Title required', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('type', videoType);
+  fd.append('title', title);
+  fd.append('description', document.getElementById('vid-desc').value);
+  fd.append('tags', document.getElementById('vid-tags').value);
+
+  if (videoType === 'url') {
+    fd.append('url', document.getElementById('vid-url').value.trim());
+  } else if (videoType === 'upload') {
+    const file = document.getElementById('vid-file').files[0];
+    if (!file) { showToast('Select a video file', 'error'); return; }
+    fd.append('file', file);
+  } else if (videoType === 'embed') {
+    fd.append('embed_code', document.getElementById('vid-embed').value.trim());
+  }
+
+  showToast('Uploading…', 'info');
+  try {
+    const res = await fetch(`${API}/api/videos`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error();
+    closeModal('modal-videos');
+    clearForm(['vid-title','vid-url','vid-desc','vid-tags','vid-embed']);
+    document.getElementById('embed-preview').style.display = 'none';
+    await loadSection('videos');
+    await loadStats();
+    showToast('Video saved!', 'success');
+  } catch(e) {
+    showToast('Failed to save video', 'error');
+  }
+}
+
+// ── SUBMIT IMAGES ────────────────────────────────────────────────────────────
+async function submitImages() {
+  const files = document.getElementById('img-files').files;
+  if (!files.length) { showToast('Select images', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('tags', document.getElementById('img-tags').value);
+  Array.from(files).filter(f => f.type.startsWith('image/')).forEach(f => fd.append('files', f));
+
+  showToast('Uploading images…', 'info');
+  try {
+    const res = await fetch(`${API}/api/images`, { method: 'POST', body: fd });
+    if (!res.ok) throw new Error();
+    closeModal('modal-images');
+    clearForm(['img-tags']);
+    document.getElementById('img-preview-list').innerHTML = '';
+    await loadSection('images');
+    await loadStats();
+    showToast('Images uploaded!', 'success');
+  } catch(e) {
+    showToast('Failed to upload images', 'error');
+  }
+}
+
+// ── PLAY VIDEO ───────────────────────────────────────────────────────────────
+function playVideo(v) {
+  document.getElementById('player-title').textContent = v.title;
+  let html = '';
+  if (v.type === 'embed') {
+    html = `<div class="video-embed-container">${v.embed_code}</div>`;
+  } else if (v.type === 'upload' && v.filename) {
+    html = `<video controls autoplay style="width:100%;border-radius:var(--radius);background:#000">
+      <source src="/uploads/videos/${v.filename}" />
+      Your browser doesn't support video playback.
+    </video>`;
+  } else if (v.type === 'url' && v.url) {
+    const ytId = extractYouTubeId(v.url);
+    const vimId = extractVimeoId(v.url);
+    if (ytId) {
+      html = `<div class="video-embed-container"><iframe src="https://www.youtube.com/embed/${ytId}?autoplay=1" allowfullscreen allow="autoplay"></iframe></div>`;
+    } else if (vimId) {
+      html = `<div class="video-embed-container"><iframe src="https://player.vimeo.com/video/${vimId}?autoplay=1" allowfullscreen allow="autoplay"></iframe></div>`;
+    } else {
+      html = `<video controls autoplay style="width:100%;border-radius:var(--radius)">
+        <source src="${v.url}" />
+      </video>`;
+    }
+  }
+  if (v.description) html += `<p style="margin-top:16px;color:var(--text2);font-size:14px;line-height:1.6">${esc(v.description)}</p>`;
+  document.getElementById('player-body').innerHTML = html;
+  openModal('modal-player');
+}
+
+function extractYouTubeId(url) {
+  const m = url.match(/(?:v=|\/v\/|youtu\.be\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function extractVimeoId(url) {
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+// ── DELETE ───────────────────────────────────────────────────────────────────
+async function deleteItem(type, id) {
+  if (!confirm('Remove this item?')) return;
+  try {
+    await fetch(`${API}/api/${type}/${id}`, { method: 'DELETE' });
+    allData[type] = allData[type].filter(i => i.id !== id);
+    renderSection(type, document.getElementById('search-input').value.toLowerCase());
+    updateBadge(type, allData[type].length);
+    loadStats();
+    showToast('Removed', 'success');
+  } catch(e) {
+    showToast('Failed to delete', 'error');
+  }
+}
+
+// ── LIGHTBOX ─────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// ── SCAN SEED IMAGES ─────────────────────────────────────────────────────────
+async function scanSeedImages() {
+  try {
+    const res = await fetch(`${API}/api/scan-seed`, { method: 'POST' });
+    const d = await res.json();
+    if (d.added > 0) {
+      showToast(`Found ${d.added} new image${d.added>1?'s':''}!`, 'success');
+      if (currentSection === 'images') await loadSection('images');
+      await loadStats();
+    } else {
+      showToast('No new images found in seed_images/', 'info');
+    }
+  } catch(e) {
+    showToast('Scan failed', 'error');
+  }
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getDomain(url) {
+  try { return new URL(url).hostname; } catch { return url; }
+}
+
+function clearForm(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  t.innerHTML = `<span>${icons[type] || '•'}</span>${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+(async () => {
+  await loadStats();
+  await loadSection('links');
+})();
+</script>
+</body>
+</html>

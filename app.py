@@ -681,7 +681,13 @@ def delete_chapter(cid):
 @app.route('/api/playlists', methods=['GET'])
 def get_playlists():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM playlists ORDER BY created_at DESC").fetchall()
+    rows = conn.execute(
+        "SELECT p.*, COALESCE(COUNT(pi.id), 0) AS item_count"
+        " FROM playlists p"
+        " LEFT JOIN playlist_items pi ON pi.playlist_id = p.id"
+        " GROUP BY p.id"
+        " ORDER BY p.created_at DESC"
+    ).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 

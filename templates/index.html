@@ -1465,7 +1465,7 @@ let currentChapterId = null;
 let pinnedFilterActive = false;
 let selectionMode = false;
 let selectedItems = { links: new Set(), videos: new Set(), images: new Set(), pdfs: new Set(), collections: new Set(), playlists: new Set(), notes: new Set() };
-let playlistCounts = {};
+let auxiliaryDataLoaded = false;
 let allData = { links: [], videos: [], images: [], pdfs: [], collections: [], chapters: [], playlists: [], notes: [] };
 
 // ── SECTION SWITCH ──────────────────────────────────────────────────────────
@@ -1507,7 +1507,21 @@ function handleSearch() {
 }
 
 // ── LOAD DATA ──────────────────────────────────────────────────────────────
-async function loadSection(name) {
+async function loadSection(name, options = {}) {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const hasCache = Array.isArray(allData[name]) && allData[name].length;
+  const shouldFetch = options.force || !hasCache;
+
+  if (hasCache && !shouldFetch) {
+    renderSection(name, query);
+    updateBadge(name, allData[name].length);
+    if (['collections', 'images', 'videos'].includes(name) && !auxiliaryDataLoaded) {
+      loadAuxiliaryData();
+    }
+    fetchSectionData(name).catch(() => {});
+    return;
+  }
+
   if (name === 'images') {
     showLoading('images-container', 'gallery-grid');
   } else if (name === 'collections') {
@@ -1519,25 +1533,27 @@ async function loadSection(name) {
   } else {
     showLoading(name + '-container', 'cards-grid');
   }
+
+  await fetchSectionData(name, true);
+}
+
+async function fetchSectionData(name, showErrors = false) {
   try {
     const res = await fetch(`${API}/api/${name}`);
-    allData[name] = await res.json();
-    if (name === 'collections' || name === 'chapters' || name === 'playlists' || name === 'notes') {
-      renderSection(name, document.getElementById('search-input').value.toLowerCase());
-      updateBadge(name, allData[name].length);
-    } else {
-      renderSection(name, document.getElementById('search-input').value.toLowerCase());
-      updateBadge(name, allData[name].length);
-    }
-    if (name === 'collections' || name === 'images' || name === 'videos') {
+    const data = await res.json();
+    allData[name] = data;
+    renderSection(name, document.getElementById('search-input').value.toLowerCase());
+    updateBadge(name, data.length);
+    if (['collections', 'images', 'videos'].includes(name)) {
       loadAuxiliaryData();
     }
-  } catch(e) {
-    showToast('Failed to load ' + name, 'error');
+  } catch (e) {
+    if (showErrors) showToast('Failed to load ' + name, 'error');
   }
 }
 
-async function loadAuxiliaryData() {
+async function loadAuxiliaryData(force = false) {
+  if (auxiliaryDataLoaded && !force) return;
   try {
     const [collectionsRes, chaptersRes, playlistsRes, notesRes] = await Promise.all([
       fetch(`${API}/api/collections`),
@@ -1549,23 +1565,13 @@ async function loadAuxiliaryData() {
     allData.chapters = await chaptersRes.json();
     allData.playlists = await playlistsRes.json();
     allData.notes = await notesRes.json();
+    auxiliaryDataLoaded = true;
     updateBadge('collections', allData.collections.length);
     updateBadge('playlists', allData.playlists.length);
     updateBadge('notes', allData.notes.length);
-    await loadPlaylistCounts();
   } catch (e) {
     // ignore auxiliary refresh failures
   }
-}
-
-async function loadPlaylistCounts() {
-  playlistCounts = {};
-  await Promise.all(allData.playlists.map(async pl => {
-    const res = await fetch(`${API}/api/playlists/${pl.id}/items`);
-    if (!res.ok) return;
-    const items = await res.json();
-    playlistCounts[pl.id] = items.length;
-  }));
 }
 
 function showLoading(id, cls) {
@@ -1775,7 +1781,7 @@ function renderPlaylists(playlists) {
     return;
   }
   c.innerHTML = playlists.map(pl => {
-    const count = playlistCounts[pl.id] || 0;
+    const count = pl.item_count || 0;
     return `
       <div class="card${pl.pinned ? ' pinned' : ''}" id="playlist-${pl.id}">
         ${renderCheckbox('playlists', pl.id)}

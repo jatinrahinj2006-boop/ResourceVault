@@ -632,8 +632,18 @@ def stats():
     collections = conn.execute("SELECT COUNT(*) FROM collections").fetchone()[0]
     playlists = conn.execute("SELECT COUNT(*) FROM playlists").fetchone()[0]
     notes = conn.execute("SELECT COUNT(*) FROM notes WHERE trashed=0 AND archived=0").fetchone()[0]
+    custom = conn.execute("SELECT COUNT(*) FROM custom_sections").fetchone()[0]
     conn.close()
-    return jsonify({'links': links, 'videos': videos, 'images': images, 'pdfs': pdfs, 'collections': collections, 'playlists': playlists, 'notes': notes})
+    return jsonify({
+        'links': links,
+        'videos': videos,
+        'images': images,
+        'pdfs': pdfs,
+        'collections': collections,
+        'playlists': playlists,
+        'notes': notes,
+        'custom': custom
+    })
 
 # ── PDFS ──────────────────────────────────────────────────────────────────────
 

@@ -2201,10 +2201,14 @@ async function loadStats() {
     setText('stat-pdfs',   s.pdfs || 0);
     const statsRow = document.getElementById('stats-row');
     if (statsRow) statsRow.style.display = 'grid';
-    updateBadge('links',  s.links);
-    updateBadge('videos', s.videos);
-    updateBadge('images', s.images);
-    updateBadge('pdfs',   s.pdfs || 0);
+    updateBadge('links',       s.links);
+    updateBadge('videos',      s.videos);
+    updateBadge('images',      s.images);
+    updateBadge('pdfs',        s.pdfs || 0);
+    updateBadge('collections', s.collections || 0);
+    updateBadge('playlists',   s.playlists || 0);
+    updateBadge('notes',       s.notes || 0);
+    updateBadge('custom',      s.custom || 0);
   } catch(e) {}
 }
 
@@ -2844,6 +2848,8 @@ async function deleteItem(type, id) {
     }
     loadStats();
     showToast('Removed', 'success');
+    fetchSectionData('trash').catch(()=>{});
+    fetchSectionData('archive').catch(()=>{});
   } catch(e) {
     showToast('Failed to delete', 'error');
   }
@@ -2880,6 +2886,8 @@ async function restoreItem(type, id) {
       await loadSection(type, { force: true });
     }
     showToast('Restored', 'success');
+    fetchSectionData('trash').catch(()=>{});
+    fetchSectionData('archive').catch(()=>{});
   } catch(e) {
     showToast('Restore failed', 'error');
   }
@@ -2897,6 +2905,8 @@ async function restoreFromArchive(type, id) {
       await loadSection(type, { force: true });
     }
     showToast('Restored from archive', 'success');
+    fetchSectionData('trash').catch(()=>{});
+    fetchSectionData('archive').catch(()=>{});
   } catch(e) {
     showToast('Restore failed', 'error');
   }
@@ -3855,7 +3865,8 @@ document.addEventListener('drop', async e => {
 (async () => {
   await loadStats();
   await populateCollectionDropdowns();
-  prefetchSectionData();
+  loadAuxiliaryData();       // replaces prefetchSectionData
+  loadStorage();             // add this line
   await loadSection('links');
 })();
 </script>
